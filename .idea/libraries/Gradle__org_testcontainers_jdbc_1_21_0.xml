@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Gradle: org.testcontainers:jdbc:1.21.0" type="java-imported" external-system-id="GRADLE">
+    <properties groupId="org.testcontainers" artifactId="jdbc" version="1.21.0" />
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.testcontainers/jdbc/1.21.0/c101b0dc2f8e2d2ff9983f06ce99c48b26f5dabc/jdbc-1.21.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
