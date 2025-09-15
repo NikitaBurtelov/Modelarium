@@ -23,3 +23,10 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_refresh_token_hash ON refresh_tokens(token_hash);
+
+ALTER TABLE refresh_tokens
+  ADD COLUMN IF NOT EXISTS token_id uuid UNIQUE DEFAULT gen_random_uuid();
+
+CREATE INDEX IF NOT EXISTS idx_refresh_token_token_id ON refresh_tokens(token_id);
+
+UPDATE refresh_tokens SET token_id = gen_random_uuid() WHERE token_id IS NULL;

@@ -36,8 +36,21 @@ class UserServiceImpl @Autowired constructor(
         }
     }
 
+    override fun existsByUsername(username: String): Boolean {
+        return userRepository.existsByUserName(username)
+    }
+
+    override fun existsByEmail(email: String): Boolean {
+        return userRepository.existsByEmail(email)
+    }
+
     @Transactional
-    fun createUser(userName: String, email: String, passwordHash: String) {
+    override fun saveAndFlush(user: UserEntity) {
+        userRepository.saveAndFlush((user))
+    }
+
+    @Transactional
+    override fun createUser(userName: String, email: String, passwordHash: String) {
         userRepository.save(
             UserEntity(
                 userName = userName,
@@ -48,7 +61,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     @Transactional
-    fun updateUser(user: UserEntity, displayName: String?, bio: String?) {
+    override fun updateUser(user: UserEntity, displayName: String?, bio: String?) {
         userRepository.save(
             user.apply {
                 this.bio = bio

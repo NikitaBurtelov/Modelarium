@@ -1,6 +1,7 @@
 package org.modelarium.auth.config
 
 import org.modelarium.auth.security.SecurityAuthenticationFilter
+import org.modelarium.auth.security.SecurityService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -10,6 +11,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
@@ -17,11 +19,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableMethodSecurity
-class SecurityConfig @Autowired constructor(
-    private val securityAuthenticationFilter: SecurityAuthenticationFilter,
-) {
+class SecurityConfig {
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun securityAuthenticationFilter(
+        @Autowired jwtService: SecurityService,
+        @Autowired userDetailsService: UserDetailsService
+    ): SecurityAuthenticationFilter {
+        return SecurityAuthenticationFilter(jwtService, userDetailsService)
+    }
+
+    @Bean
+    fun securityFilterChain(http: HttpSecurity, securityAuthenticationFilter: SecurityAuthenticationFilter): SecurityFilterChain {
         http.csrf { it.disable() }
         http.sessionManagement { session ->
             session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -31,7 +39,10 @@ class SecurityConfig @Autowired constructor(
             auth.requestMatchers("/actuator/**").permitAll()
             auth.anyRequest().authenticated()
         }
-        http.addFilterBefore(securityAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+        http.addFilterBefore(
+            securityAuthenticationFilter,
+            UsernamePasswordAuthenticationFilter::class.java
+        )
         return http.build()
     }
 
