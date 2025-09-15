@@ -1,4 +1,4 @@
-package org.modelarium.auth.security
+package org.modelarium.auth.service
 
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm

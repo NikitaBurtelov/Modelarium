@@ -8,7 +8,6 @@ import org.modelarium.auth.dto.RefreshRq
 import org.modelarium.auth.dto.RegisterRq
 import org.modelarium.auth.persistence.entity.UserEntity
 import org.modelarium.auth.persistence.repository.UserRepository
-import org.modelarium.auth.security.SecurityService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service

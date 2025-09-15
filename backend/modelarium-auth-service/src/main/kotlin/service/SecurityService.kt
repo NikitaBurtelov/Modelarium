@@ -1,4 +1,4 @@
-package org.modelarium.auth.security
+package org.modelarium.auth.service
 
 import org.modelarium.auth.persistence.entity.RefreshTokenEntity
 import org.modelarium.auth.persistence.entity.UserEntity

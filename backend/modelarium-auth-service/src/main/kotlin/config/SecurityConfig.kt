@@ -1,7 +1,7 @@
 package org.modelarium.auth.config
 
 import org.modelarium.auth.security.SecurityAuthenticationFilter
-import org.modelarium.auth.security.SecurityService
+import org.modelarium.auth.service.SecurityService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

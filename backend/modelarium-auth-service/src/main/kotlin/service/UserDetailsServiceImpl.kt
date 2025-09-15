@@ -1,6 +1,7 @@
-package org.modelarium.auth.security
+package org.modelarium.auth.service
 
 import org.modelarium.auth.persistence.repository.UserRepository
+import org.modelarium.auth.security.UserDetailsImpl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
