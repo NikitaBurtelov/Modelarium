@@ -51,6 +51,9 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+.gigaide
+amplicode.xml
 
 ### env
 .env
+infra/prod
