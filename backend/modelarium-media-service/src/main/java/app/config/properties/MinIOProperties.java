@@ -1,0 +1,27 @@
+package app.config.properties;
+
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.regions.Region;
+
+@Configuration
+@ConfigurationProperties(prefix = "minio")
+@Setter
+@Getter
+public class MinIOProperties {
+    private String url;
+    private String login;
+    private String password;
+    private String bucket;
+    private Region region;
+    private Img img = new Img();
+
+    @Setter
+    @Getter
+    public static class Img {
+        private String bucketName;
+
+    }
+}
