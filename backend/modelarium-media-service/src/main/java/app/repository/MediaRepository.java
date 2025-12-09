@@ -1,11 +1,8 @@
 package app.repository;
 
 import app.model.entity.MediaEntity;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Mono;
 
-import java.util.UUID;
-
-public interface MediaRepository
-        extends ReactiveCrudRepository<MediaEntity, UUID> {
+interface MediaRepository {
+    public Mono<MediaEntity> insert(MediaEntity entity);
 }
-

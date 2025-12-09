@@ -13,6 +13,7 @@ import reactor.kafka.sender.KafkaSender;
 import reactor.kafka.sender.SenderOptions;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.net.URI;
@@ -37,17 +38,17 @@ public class MediaServiceConfig {
                                         minIOProperties.getPassword()
                                 )
                         )
-                ).region(minIOProperties.getRegion())
+                ).region(Region.of(minIOProperties.getRegion()))
                 .forcePathStyle(true)
                 .build();
     }
 
     @Bean
-    public KafkaSender<String, String> kafkaSender() {
+    public KafkaSender<String, String> kafkaSender() throws ClassNotFoundException {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServer());
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, kafkaProperties.getProducer().getValueSerializer());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, kafkaProperties.getProducer().getValueSerializer());
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, Class.forName(kafkaProperties.getProducer().getValueSerializer()));
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, Class.forName(kafkaProperties.getProducer().getValueSerializer()));
         props.put(ProducerConfig.ACKS_CONFIG, "all");
 
         SenderOptions<String, String> senderOptions = SenderOptions.create(props);
@@ -56,13 +57,13 @@ public class MediaServiceConfig {
     }
 
     @Bean
-    public KafkaReceiver<String, String> kafkaReceiver() {
+    public KafkaReceiver<String, String> kafkaReceiver() throws ClassNotFoundException {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServer());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, kafkaProperties.getConsumer().getGroupId());
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, kafkaProperties.getConsumer().getKeyDeserializer());
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, kafkaProperties.getConsumer().getValueDeserializer());
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, kafkaProperties.getConsumer().getAutoOffsetReset());
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, Class.forName(kafkaProperties.getConsumer().getKeyDeserializer()));
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, Class.forName(kafkaProperties.getConsumer().getValueDeserializer()));
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, Class.forName(kafkaProperties.getConsumer().getAutoOffsetReset()));
 
         ReceiverOptions<String, String> receiverOptions = ReceiverOptions.<String, String>create(props)
                 .subscription(Collections.singleton(kafkaProperties.getConsumer().getGroupId()));

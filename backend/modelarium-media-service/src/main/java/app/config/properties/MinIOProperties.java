@@ -14,8 +14,7 @@ public class MinIOProperties {
     private String url;
     private String login;
     private String password;
-    private String bucket;
-    private Region region;
+    private String region;
     private Img img = new Img();
 
     @Setter

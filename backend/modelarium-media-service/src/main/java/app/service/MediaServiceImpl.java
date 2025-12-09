@@ -2,22 +2,27 @@ package app.service;
 
 import app.config.properties.MinIOProperties;
 import app.model.entity.MediaEntity;
-import app.repository.MediaRepository;
+import app.repository.MediaReactiveRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.io.InputStream;
+import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -25,8 +30,8 @@ import java.util.UUID;
 @Log4j2
 @RequiredArgsConstructor
 public class MediaServiceImpl implements MediaService {
-    private final MediaRepository mediaRepository;
-    private final S3Client s3Client;
+    private final MediaReactiveRepository mediaReactiveRepository;
+    private final StorageService storageService;
     private final MinIOProperties minIOProperties;
 
     private final TransactionalOperator transactionalOperator;
@@ -37,58 +42,102 @@ public class MediaServiceImpl implements MediaService {
         String objectName = id + "_" + filePart.filename();
         String contentType = Objects.requireNonNull(filePart.headers().getContentType()).toString();
 
-        return Mono.fromCallable(() -> {
-                    InputStream stream =
-                            DataBufferUtils.join(filePart.content())
-                                    .map(DataBuffer::asInputStream)
-                                    .block();
-                    s3Client.putObject(
-                            PutObjectRequest.builder()
-                                    .bucket(minIOProperties.getBucket())
-                                    .key(objectName)
-                                    .contentType(contentType)
-                                    .build(),
-                            RequestBody.fromInputStream(stream, stream.available())
-                    );
-                    log.info(
-                            "File uploaded to storage. Key: {}",
-                            objectName
-                    );
-                    return stream;
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(stream -> {
-                    MediaEntity entity = MediaEntity.builder()
-                            .id(id)
-                            .objectName(objectName)
-                            .contentType(contentType)
-                            .size(filePart.headers().getContentLength())
-                            .build();
-                    return mediaRepository.save(entity)
-                            .as(transactionalOperator::transactional)
-                            .onErrorResume(e -> {
-                                return Mono.fromRunnable(() -> {
-                                    try {
-                                        s3Client.deleteObject(
-                                                DeleteObjectRequest.builder()
-                                                        .bucket(minIOProperties.getBucket())
-                                                        .key(objectName)
-                                                        .build()
-                                        );
-                                        log.info(
-                                                "Error saving entity, deleting file from S3. Key: {}. Error: {}",
-                                                objectName,
-                                                e
-                                        );
-                                    } catch (Exception ex) {
-                                        log.error(
-                                                "Error deleting file from storage. Key: {}. Error: {}",
-                                                objectName,
-                                                ex
-                                        );
-                                    }
-                                }).then(Mono.error(e));
-                            });
-                });
+        return DataBufferUtils.join(filePart.content())
+                .map(DataBuffer::asInputStream)
+                .flatMap(stream ->
+                        Mono.fromCallable(() -> {
+                                    storageService.putObject(
+                                            PutObjectRequest.builder()
+                                                    .bucket(minIOProperties.getImg().getBucketName())
+                                                    .key(objectName)
+                                                    .contentType(contentType)
+                                                    .build(),
+                                            RequestBody.fromInputStream(stream, stream.available())
+                                    );
+                                    log.info("File uploaded to storage. Key: {}", objectName);
+                                    return stream;
+                                })
+                                .subscribeOn(Schedulers.boundedElastic()))
+                .map(stream ->
+                        MediaEntity.builder()
+                                .id(id)
+                                .objectName(objectName)
+                                .contentType(contentType)
+                                .size(filePart.headers().getContentLength())
+                                .build())
+                .flatMap(entity ->
+                        mediaReactiveRepository.insert(entity)
+                                .as(transactionalOperator::transactional)
+                                .onErrorResume(e -> {
+                                    return Mono.fromRunnable(() -> {
+                                        try {
+                                            storageService.deleteObject(
+                                                    DeleteObjectRequest.builder()
+                                                            .bucket(minIOProperties.getImg().getBucketName())
+                                                            .key(objectName)
+                                                            .build()
+                                            );
+                                            log.info(
+                                                    "Error saving entity, deleting file from S3. Key: {}. Error: {}",
+                                                    objectName,
+                                                    e
+                                            );
+                                        } catch (Exception ex) {
+                                            log.error(
+                                                    "Error deleting file from storage. Key: {}. Error: {}",
+                                                    objectName,
+                                                    ex
+                                            );
+                                        }
+                                    }).then(Mono.error(e));
+                                })
+                );
+    }
+
+    public Flux<DataBuffer> filesWithMeta(List<String> objectName) {
+        return Flux.fromIterable(objectName)
+                .concatMap(this::singleFileWithMeta);
+    }
+
+    private Flux<DataBuffer> singleFileWithMeta(String objectName) {
+        Mono<ResponseInputStream<GetObjectResponse>> s3ObjectMono =
+                Mono.fromCallable(() ->
+                                storageService.getObject(
+                                        GetObjectRequest.builder()
+                                                .bucket(minIOProperties.getImg().getBucketName())
+                                                .key(objectName)
+                                                .build()
+                                )
+                        )
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .timeout(Duration.ofSeconds(10))
+                        .doOnError(ex ->
+                                log.error(
+                                        "Error fetching file {} from S3: {}",
+                                        objectName,
+                                        ex.getMessage()
+                                )
+                        );
+        return s3ObjectMono.flatMapMany(s3Object -> {
+            long fileSize = s3Object.response().contentLength();
+            String metaData = String.format("{\"name\":\"%s\",\"size\":%d}\n", objectName, fileSize);
+
+            Flux<DataBuffer> fileFlux = DataBufferUtils.readInputStream(
+                    () -> s3Object,
+                    new DefaultDataBufferFactory(),
+                    4096
+            );
+
+            return Flux.concat(
+                            Flux.just(
+                                    new DefaultDataBufferFactory().wrap(metaData.getBytes())),
+                            fileFlux
+                    )
+                    .onErrorResume(ex -> {
+                        log.error("Error streaming file {}: {}", objectName, ex.getMessage());
+                        String errorMeta = String.format("{\"name\":\"%s\",\"error\":\"%s\"}\n", objectName, ex.getMessage());
+                        return Flux.just(new DefaultDataBufferFactory().wrap(errorMeta.getBytes()));
+                    });
+        });
     }
 }
