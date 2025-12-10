@@ -14,6 +14,8 @@ public class MediaEntity {
     @Id
     private UUID id;
 
+    private UUID externalId;
+
     private String objectName;
 
     private String contentType;

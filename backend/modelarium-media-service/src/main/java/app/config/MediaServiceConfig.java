@@ -63,7 +63,7 @@ public class MediaServiceConfig {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, kafkaProperties.getConsumer().getGroupId());
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, Class.forName(kafkaProperties.getConsumer().getKeyDeserializer()));
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, Class.forName(kafkaProperties.getConsumer().getValueDeserializer()));
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, Class.forName(kafkaProperties.getConsumer().getAutoOffsetReset()));
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, kafkaProperties.getConsumer().getAutoOffsetReset());
 
         ReceiverOptions<String, String> receiverOptions = ReceiverOptions.<String, String>create(props)
                 .subscription(Collections.singleton(kafkaProperties.getConsumer().getGroupId()));

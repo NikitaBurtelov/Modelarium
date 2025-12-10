@@ -1,6 +1,6 @@
 package app.controller;
 
-import app.model.entity.MediaEntity;
+import app.model.dto.MediaUploadResponse;
 import app.service.MediaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -13,6 +13,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.UUID;
 
 @Log4j2
 @RestController
@@ -22,10 +23,12 @@ public class MediaController {
     private final MediaService mediaService;
 
     @PostMapping("/img")
-    public Mono<ResponseEntity<List<MediaEntity>>> upload(@RequestPart("files") Flux<FilePart> files) {
+    public Mono<ResponseEntity<MediaUploadResponse>> upload(
+            @RequestPart("files") Flux<FilePart> files,
+            @RequestPart("id") UUID externalId) {
         log.info("Multiple file upload request received");
         return files.flatMap(filePart ->
-                        mediaService.upload(filePart)
+                        mediaService.upload(filePart, externalId)
                                 .doOnSuccess(
                                         mediaEntity -> log.info(
                                                 "File {} uploaded successfully",
@@ -45,14 +48,41 @@ public class MediaController {
                                 .onErrorResume(ex -> Mono.empty())
                 )
                 .collectList()
-                .map(ResponseEntity::ok);
+                .map(mediaEntities -> {
+                    List<MediaUploadResponse.MediaData> mediaDataList = mediaEntities.stream()
+                            .map(me -> {
+                                MediaUploadResponse.MediaData md = new MediaUploadResponse.MediaData();
+                                md.setId(me.getId());
+                                md.setObjectName(me.getObjectName());
+                                return md;
+                            })
+                            .toList();
+                    MediaUploadResponse response = MediaUploadResponse.builder()
+                            .mediaData(mediaDataList).build();
+
+                    return ResponseEntity.ok(response);
+                });
     }
 
-    @GetMapping("/img/multiple/with-mata")
-    public Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleWithMeta(@RequestParam List<String> objectName) {
+    @GetMapping("/img/multiple/by-name")
+    public Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByName(@RequestParam List<String> objectName) {
         log.info("Request to download multiple files has been received.");
 
         Flux<DataBuffer> flux = mediaService.filesWithMeta(objectName);
+
+        return Mono.just(
+                ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
+                        .body(flux)
+        );
+    }
+
+
+    @GetMapping("/img/multiple/by-external-id")
+    public Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByExternalId(@RequestParam("externalId") UUID externalId) {
+        log.info("Request to download multiple files has been received.");
+
+        Flux<DataBuffer> flux = mediaService.filesWithMeta(externalId);
 
         return Mono.just(
                 ResponseEntity.ok()

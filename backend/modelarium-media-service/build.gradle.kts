@@ -10,7 +10,7 @@ plugins {
     id("jacoco")
 }
 
-group = "${rootProject.group}.user"
+group = "${rootProject.group}.media"
 version = rootProject.version
 
 dependencies {
@@ -27,5 +27,12 @@ dependencies {
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
-    mainClass.set("org.modelarium.user.MediaServiceApplicationKt")
+    mainClass.set("org.modelarium.media.MediaServiceApplication")
+}
+
+tasks.register("serviceInfo") {
+    doLast {
+        println("Module: media-service")
+        println("Group: ${project.group}, Version: ${project.version}")
+    }
 }

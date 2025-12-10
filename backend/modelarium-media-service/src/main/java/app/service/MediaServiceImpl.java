@@ -37,7 +37,7 @@ public class MediaServiceImpl implements MediaService {
     private final TransactionalOperator transactionalOperator;
 
     @Override
-    public Mono<MediaEntity> upload(FilePart filePart) {
+    public Mono<MediaEntity> upload(FilePart filePart, UUID externalId) {
         UUID id = UUID.randomUUID();
         String objectName = id + "_" + filePart.filename();
         String contentType = Objects.requireNonNull(filePart.headers().getContentType()).toString();
@@ -61,6 +61,7 @@ public class MediaServiceImpl implements MediaService {
                 .map(stream ->
                         MediaEntity.builder()
                                 .id(id)
+                                .externalId(externalId)
                                 .objectName(objectName)
                                 .contentType(contentType)
                                 .size(filePart.headers().getContentLength())
@@ -99,6 +100,10 @@ public class MediaServiceImpl implements MediaService {
                 .concatMap(this::singleFileWithMeta);
     }
 
+    public Flux<DataBuffer> filesWithMeta(UUID externalId) {
+        return singleFileWithMeta(externalId);
+    }
+
     private Flux<DataBuffer> singleFileWithMeta(String objectName) {
         Mono<ResponseInputStream<GetObjectResponse>> s3ObjectMono =
                 Mono.fromCallable(() ->
@@ -124,6 +129,52 @@ public class MediaServiceImpl implements MediaService {
 
             Flux<DataBuffer> fileFlux = DataBufferUtils.readInputStream(
                     () -> s3Object,
+                    new DefaultDataBufferFactory(),
+                    4096
+            );
+
+            return Flux.concat(
+                            Flux.just(
+                                    new DefaultDataBufferFactory().wrap(metaData.getBytes())),
+                            fileFlux
+                    )
+                    .onErrorResume(ex -> {
+                        log.error("Error streaming file {}: {}", objectName, ex.getMessage());
+                        String errorMeta = String.format("{\"name\":\"%s\",\"error\":\"%s\"}\n", objectName, ex.getMessage());
+                        return Flux.just(new DefaultDataBufferFactory().wrap(errorMeta.getBytes()));
+                    });
+        });
+    }
+
+    private static record S3FileWithName(String objectName, ResponseInputStream<GetObjectResponse> s3Stream) {}
+
+    private Flux<DataBuffer> singleFileWithMeta(UUID externalId) {
+        Flux<S3FileWithName> s3ObjectsFlux = mediaReactiveRepository
+                .findAllByExternalId(externalId) // Flux<MediaEntity>
+                .flatMap(mediaEntity -> {
+                    String objectName = mediaEntity.getObjectName();
+
+                    return Mono.fromCallable(() ->
+                                    storageService.getObject(
+                                            GetObjectRequest.builder()
+                                                    .bucket(minIOProperties.getImg().getBucketName())
+                                                    .key(objectName)
+                                                    .build()
+                                    )
+                            )
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .timeout(Duration.ofSeconds(10))
+                            .map(s3Stream -> new S3FileWithName(objectName, s3Stream))
+                            .doOnError(ex -> log.error("Error fetching file {} from S3: {}", objectName, ex.getMessage()));
+                });
+
+        return s3ObjectsFlux.flatMap(s3Object -> {
+            long fileSize = s3Object.s3Stream.response().contentLength();
+            String objectName = s3Object.objectName;
+            String metaData = String.format("{\"name\":\"%s\",\"size\":%d}\n", objectName, fileSize);
+
+            Flux<DataBuffer> fileFlux = DataBufferUtils.readInputStream(
+                    () -> s3Object.s3Stream,
                     new DefaultDataBufferFactory(),
                     4096
             );
