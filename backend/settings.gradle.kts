@@ -16,3 +16,4 @@ val rootModuleName = "modelarium"
 include("modelarium-auth-service")
 include("modelarium-user-service")
 include("modelarium-media-service")
+include("modelarium-post-service")

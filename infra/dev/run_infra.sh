@@ -1,11 +1,9 @@
-echo 'Open Docker'
+echo 'Open Docker Desktop...'
 open -a Docker
+
 echo 'Start infra [local]'
 cd ~/kafka-docker/
 docker-compose up -d
-
-echo "Open Docker Desktop..."
-open -a Docker
 
 echo "Waiting for Docker to start..."
 while ! docker info > /dev/null 2>&1; do
