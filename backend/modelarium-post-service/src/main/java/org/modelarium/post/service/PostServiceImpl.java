@@ -31,12 +31,14 @@ public class PostServiceImpl implements PostService {
     public Mono<PostDataResponse> createPost(
             PostCreateRequest request,
             UUID authorId,
+            UUID workId,
             Mono<ResponseEntity<MediaUploadResponse>> mediaUploadResponse) {
         return mediaUploadResponse
                 .map(ResponseEntity::getBody)
                 .flatMap(response -> {
                             PostEntity postEntity = PostEntity.builder()
-                                    .id(UUID.randomUUID())
+                                    .id(workId)
+                                    .authorId(authorId)
                                     .tags(request.tags())
                                     .description(request.description())
                                     .mentions(request.mentions())
@@ -65,8 +67,8 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Flux<PostDataResponse> getPostsByUser(String userId) {
-        return null;
+    public Flux<PostDataResponse> getPostsByUser(UUID userId) {
+        return postReactiveRepository.findAllByAuthorId(userId).map(this::toResponse);
     }
 
     @Override

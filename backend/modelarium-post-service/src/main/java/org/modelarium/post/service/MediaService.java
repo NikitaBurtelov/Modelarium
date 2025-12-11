@@ -10,7 +10,10 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 public interface MediaService {
-    Mono<ResponseEntity<MediaUploadResponse>> upload(Flux<FilePart> files);
+    Mono<ResponseEntity<MediaUploadResponse>> upload(
+            UUID externalId,
+            UUID authorId,
+            Flux<FilePart> files);
 
     Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByExternalId(UUID externalId);
 }

@@ -11,11 +11,11 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 public interface PostService {
-    Mono<PostDataResponse> createPost(PostCreateRequest request, UUID authorId, Mono<ResponseEntity<MediaUploadResponse>> mediaUploadResponse);
+    Mono<PostDataResponse> createPost(PostCreateRequest request, UUID authorId, UUID workId, Mono<ResponseEntity<MediaUploadResponse>> mediaUploadResponse);
 
     Mono<PostDataResponse> getPost(UUID postId);
 
-    Flux<PostDataResponse> getPostsByUser(String userId);
+    Flux<PostDataResponse> getPostsByUser(UUID userId);
 
     Mono<PostDataResponse> updatePost(Long postId, PostUpdateRequest request, String authorId);
 

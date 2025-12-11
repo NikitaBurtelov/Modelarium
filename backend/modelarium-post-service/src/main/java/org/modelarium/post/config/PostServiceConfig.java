@@ -11,7 +11,7 @@ public class PostServiceConfig {
     @Bean
     public WebClient webClient(WebClient.Builder builder) {
         return builder
-                .baseUrl("http://media-service") //TODO
+                .baseUrl("http://localhost:8094/") //TODO убрать хардкод
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }

@@ -28,16 +28,24 @@ public class PostController {
             @RequestPart("request") PostCreateRequest request,
             @RequestPart("files") Flux<FilePart> files
     ) {
+        UUID workId = UUID.randomUUID();
+
         return postService.createPost(
                 request,
                 authorId,
-                mediaService.upload(files)
+                workId,
+                mediaService.upload(workId, authorId, files)
         ).map(ResponseEntity::ok);
     }
 
     @GetMapping("/{postId}")
-    public Mono<ResponseEntity<PostDataResponse>> getPost(@PathVariable UUID postId) {
+    public Mono<ResponseEntity<PostDataResponse>> getPostById(@PathVariable UUID postId) {
         return postService.getPost(postId).map(ResponseEntity::ok);
+    }
+
+    @GetMapping("user/{userId}")
+    public Flux<ResponseEntity<PostDataResponse>> getPostsByUserId(@PathVariable UUID userId) {
+        return postService.getPostsByUser(userId).map(ResponseEntity::ok);
     }
 
     @DeleteMapping("/{postId}")
