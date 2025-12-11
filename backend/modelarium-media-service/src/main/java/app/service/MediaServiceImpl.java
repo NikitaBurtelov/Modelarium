@@ -21,6 +21,8 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -100,8 +102,8 @@ public class MediaServiceImpl implements MediaService {
                 .concatMap(this::singleFileWithMeta);
     }
 
-    public Flux<DataBuffer> filesWithMeta(UUID externalId) {
-        return singleFileWithMeta(externalId);
+    public Flux<DataBuffer> filesWithMeta(UUID externalId, String boundary) {
+        return multipleFilesWithMeta(externalId, boundary);
     }
 
     private Flux<DataBuffer> singleFileWithMeta(String objectName) {
@@ -146,49 +148,58 @@ public class MediaServiceImpl implements MediaService {
         });
     }
 
-    private static record S3FileWithName(String objectName, ResponseInputStream<GetObjectResponse> s3Stream) {}
+    private Flux<DataBuffer> multipleFilesWithMeta(UUID externalId, String boundary) {
+        DefaultDataBufferFactory factory = new DefaultDataBufferFactory();
 
-    private Flux<DataBuffer> singleFileWithMeta(UUID externalId) {
-        Flux<S3FileWithName> s3ObjectsFlux = mediaReactiveRepository
-                .findAllByExternalId(externalId) // Flux<MediaEntity>
+        return mediaReactiveRepository.findAllByExternalId(externalId)
                 .flatMap(mediaEntity -> {
                     String objectName = mediaEntity.getObjectName();
 
                     return Mono.fromCallable(() ->
-                                    storageService.getObject(
-                                            GetObjectRequest.builder()
-                                                    .bucket(minIOProperties.getImg().getBucketName())
-                                                    .key(objectName)
-                                                    .build()
-                                    )
+                                    storageService.getObject(GetObjectRequest.builder()
+                                            .bucket(minIOProperties.getImg().getBucketName())
+                                            .key(objectName)
+                                            .build())
                             )
                             .subscribeOn(Schedulers.boundedElastic())
                             .timeout(Duration.ofSeconds(10))
-                            .map(s3Stream -> new S3FileWithName(objectName, s3Stream))
-                            .doOnError(ex -> log.error("Error fetching file {} from S3: {}", objectName, ex.getMessage()));
-                });
+                            .flatMapMany(s3Stream -> {
+                                long fileSize = s3Stream.response().contentLength();
 
-        return s3ObjectsFlux.flatMap(s3Object -> {
-            long fileSize = s3Object.s3Stream.response().contentLength();
-            String objectName = s3Object.objectName;
-            String metaData = String.format("{\"name\":\"%s\",\"size\":%d}\n", objectName, fileSize);
+                                String headers = "--" + boundary + "\r\n" +
+                                        "Content-Disposition: form-data; name=\"file\"; filename=\"" + objectName + "\"\r\n" +
+                                        "Content-Type: " + (s3Stream.response().contentType() != null ?
+                                        s3Stream.response().contentType() : "application/octet-stream") + "\r\n\r\n";
 
-            Flux<DataBuffer> fileFlux = DataBufferUtils.readInputStream(
-                    () -> s3Object.s3Stream,
-                    new DefaultDataBufferFactory(),
-                    4096
-            );
+                                DataBuffer headerBuffer = factory.wrap(headers.getBytes(StandardCharsets.UTF_8));
+                                DataBuffer footerBuffer = factory.wrap("\r\n".getBytes(StandardCharsets.UTF_8));
 
-            return Flux.concat(
-                            Flux.just(
-                                    new DefaultDataBufferFactory().wrap(metaData.getBytes())),
-                            fileFlux
-                    )
-                    .onErrorResume(ex -> {
-                        log.error("Error streaming file {}: {}", objectName, ex.getMessage());
-                        String errorMeta = String.format("{\"name\":\"%s\",\"error\":\"%s\"}\n", objectName, ex.getMessage());
-                        return Flux.just(new DefaultDataBufferFactory().wrap(errorMeta.getBytes()));
-                    });
-        });
+                                Flux<DataBuffer> contentFlux = DataBufferUtils.readInputStream(
+                                        () -> s3Stream,
+                                        factory,
+                                        4096
+                                ).doFinally(signal -> {
+                                    try {
+                                        s3Stream.close();
+                                    } catch (IOException e) {
+                                        log.error("Failed to close S3 stream: {}", e.getMessage());
+                                    }
+                                });
+
+                                return Flux.concat(Mono.just(headerBuffer), contentFlux, Mono.just(footerBuffer))
+                                        .onErrorResume(ex -> {
+                                            log.error("Error streaming file {}: {}", objectName, ex.getMessage());
+                                            String errorPart = "--" + boundary + "\r\n" +
+                                                    "Content-Disposition: form-data; name=\"file\"; filename=\"" + objectName + "\"\r\n" +
+                                                    "Content-Type: text/plain\r\n\r\n" +
+                                                    "ERROR: " + ex.getMessage() + "\r\n";
+                                            return Mono.just(factory.wrap(errorPart.getBytes(StandardCharsets.UTF_8)));
+                                        });
+                            });
+                })
+                .concatWith(Mono.defer(() -> {
+                    String closing = "--" + boundary + "--\r\n";
+                    return Mono.just(factory.wrap(closing.getBytes(StandardCharsets.UTF_8)));
+                }));
     }
 }

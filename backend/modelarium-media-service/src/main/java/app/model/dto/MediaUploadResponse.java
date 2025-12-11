@@ -1,19 +1,15 @@
 package app.model.dto;
 
 import lombok.Builder;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
-import java.util.UUID;
 
 @Setter
+@Getter
 @Builder
 public class MediaUploadResponse {
     private List<MediaData> mediaData;
 
-    @Setter
-    public static class MediaData {
-        private UUID id;
-        private String objectName;
-    }
 }

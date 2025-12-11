@@ -1,5 +1,6 @@
 package app.controller;
 
+import app.model.dto.MediaData;
 import app.model.dto.MediaUploadResponse;
 import app.service.MediaService;
 import lombok.RequiredArgsConstructor;
@@ -25,10 +26,10 @@ public class MediaController {
     @PostMapping("/img")
     public Mono<ResponseEntity<MediaUploadResponse>> upload(
             @RequestPart("files") Flux<FilePart> files,
-            @RequestPart("id") UUID externalId) {
+            @RequestPart("id") String externalId) {
         log.info("Multiple file upload request received");
         return files.flatMap(filePart ->
-                        mediaService.upload(filePart, externalId)
+                        mediaService.upload(filePart, UUID.fromString(externalId))
                                 .doOnSuccess(
                                         mediaEntity -> log.info(
                                                 "File {} uploaded successfully",
@@ -49,9 +50,9 @@ public class MediaController {
                 )
                 .collectList()
                 .map(mediaEntities -> {
-                    List<MediaUploadResponse.MediaData> mediaDataList = mediaEntities.stream()
+                    List<MediaData> mediaDataList = mediaEntities.stream()
                             .map(me -> {
-                                MediaUploadResponse.MediaData md = new MediaUploadResponse.MediaData();
+                                MediaData md = new MediaData();
                                 md.setId(me.getId());
                                 md.setObjectName(me.getObjectName());
                                 return md;
@@ -77,17 +78,19 @@ public class MediaController {
         );
     }
 
-
+    @CrossOrigin(origins = "*") //TODO потом убрать
     @GetMapping("/img/multiple/by-external-id")
     public Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByExternalId(@RequestParam("externalId") UUID externalId) {
         log.info("Request to download multiple files has been received.");
+        String boundary = "boundary-" + UUID.randomUUID();
+        Flux<DataBuffer> multipartFlux = mediaService.filesWithMeta(externalId, boundary);
 
-        Flux<DataBuffer> flux = mediaService.filesWithMeta(externalId);
+        log.info("GO GO");
 
         return Mono.just(
                 ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_TYPE, "application/octet-stream")
-                        .body(flux)
+                        .header(HttpHeaders.CONTENT_TYPE, "multipart/x-mixed-replace; boundary=" + boundary)
+                        .body(multipartFlux)
         );
     }
 }
