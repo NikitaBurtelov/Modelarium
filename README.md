@@ -1,8 +1,11 @@
-<div align="center">
+<h1 align="center">
+Modelarium
+</h1>
 
-# Modelarium
+<span style="display:block;text-align:center">
 
 ```
+
 ⠀⠀⠀⠀⠀⠀⠀⠀⢀⠨⠭⢭⣭⢭⡥⠭⠕⡀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⣀⠄⠂⠉⢷⣠⣼⡛⣘⣷⣀⡶⠉⠐⠠⡀⠀⠀⠀⠀⠀
 ⠀⠀⠀⢀⠬⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢧⡀⠀⠀⠀
@@ -21,8 +24,7 @@
 ☠ MODELARIUM ☠
 IMPERIAL CODEX OF MODELARIUM
 ```
-</div>
-
+</span>
 
 
 **Modelarium** — веб‑сервис для моделистов, объединяющий инструменты управления моделями, медиа‑контентом и пользовательскими профилями в единой системе.
