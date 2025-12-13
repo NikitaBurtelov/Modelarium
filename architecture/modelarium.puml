@@ -1,0 +1,49 @@
+@startuml
+skinparam rectangleBackgroundColor #EEF
+skinparam rectangleBorderColor #333
+skinparam shadowing false
+
+actor User
+
+rectangle "API Gateway" as Gateway
+
+rectangle "Auth-service" as Auth
+rectangle "User-profile-service" as Profile
+rectangle "Post-service" as Post
+rectangle "Media-service" as Media
+rectangle "Feed-service" as Feed
+rectangle "Like-service" as Like
+rectangle "Comment-service" as Comment
+rectangle "Search-service" as Search
+rectangle "Notification-service" as Notify
+rectangle "Admin-service" as Admin
+
+User --> Gateway
+
+Gateway --> Auth : login / refresh\nuser auth
+Gateway --> Profile : get user profile\nupdate profile
+Gateway --> Post : create post\nget posts
+Gateway --> Media : upload images/videos
+Gateway --> Feed : get feed
+Gateway --> Like : like/unlike post
+Gateway --> Comment : create comment\nget comments
+Gateway --> Search : search posts/users
+Gateway --> Admin : moderation actions
+
+' Internal service → service calls
+Post --> Media : attach media
+Post --> Profile : get user info
+Like --> Post : verify post
+Comment --> Post : verify post
+Feed --> Post : fetch posts
+Feed --> Profile : user info
+Feed --> Media : media info
+Search --> Post : index posts
+Search --> Profile : index users
+Notify <-- Like : send event
+Notify <-- Comment : send event
+Notify <-- Post : send event
+Admin --> Post : block/remove content
+Admin --> Profile : block user
+
+@enduml

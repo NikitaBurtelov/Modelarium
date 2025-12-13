@@ -1,0 +1,38 @@
+@startuml
+skinparam rectangleBackgroundColor #EEF
+skinparam rectangleBorderColor #333
+skinparam shadowing false
+
+rectangle "Auth-service" as Auth
+rectangle "User-profile-service" as Profile
+rectangle "Post-service" as Post
+rectangle "Media-service" as Media
+rectangle "Feed-service" as Feed
+rectangle "Like-service" as Like
+rectangle "Comment-service" as Comment
+rectangle "Search-service" as Search
+rectangle "Notification-service" as Notify
+rectangle "Admin-service" as Admin
+
+' Взаимодействия между сервисами
+Post --> Media
+Post --> Profile
+
+Like --> Post
+Comment --> Post
+
+Feed --> Post
+Feed --> Profile
+Feed --> Media
+
+Search --> Post
+Search --> Profile
+
+Notify <-- Like
+Notify <-- Comment
+Notify <-- Post
+
+Admin --> Post
+Admin --> Profile
+
+@enduml
