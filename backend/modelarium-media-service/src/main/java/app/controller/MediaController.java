@@ -85,12 +85,15 @@ public class MediaController {
         String boundary = "boundary-" + UUID.randomUUID();
         Flux<DataBuffer> multipartFlux = mediaService.filesWithMeta(externalId, boundary);
 
-        log.info("GO GO");
-
         return Mono.just(
                 ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_TYPE, "multipart/x-mixed-replace; boundary=" + boundary)
                         .body(multipartFlux)
         );
+    }
+
+    @DeleteMapping("img/{postId}")
+    public Mono<ResponseEntity> deletePost(@PathVariable UUID postId) {
+        return mediaService.deleteObject(postId).then(Mono.just(ResponseEntity.ok().build()));
     }
 }

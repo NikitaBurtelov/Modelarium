@@ -97,6 +97,23 @@ public class MediaServiceImpl implements MediaService {
                 );
     }
 
+    @Override
+    public Mono<Void> deleteObject(UUID externalId) {
+        return mediaReactiveRepository.findAllByExternalId(externalId)
+                .flatMap(mediaEntity ->
+                        Mono.fromRunnable(() -> {
+                                    storageService.deleteObject(
+                                            DeleteObjectRequest.builder()
+                                                    .bucket(minIOProperties.getImg().getBucketName())
+                                                    .key(mediaEntity.getObjectName())
+                                                    .build()
+                                    );
+                                })
+                                .subscribeOn(Schedulers.boundedElastic())
+                )
+                .then();
+    }
+
     public Flux<DataBuffer> filesWithMeta(List<String> objectName) {
         return Flux.fromIterable(objectName)
                 .concatMap(this::singleFileWithMeta);

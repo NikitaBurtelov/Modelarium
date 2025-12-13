@@ -12,7 +12,7 @@ import java.io.InputStream;
 
 @Service
 @RequiredArgsConstructor
-public class StorageServiceImpl implements StorageService {
+class StorageServiceImpl implements StorageService {
     private final S3Client s3Client;
 
     @Override

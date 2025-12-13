@@ -12,6 +12,8 @@ import java.util.UUID;
 public interface MediaService {
     Mono<MediaEntity> upload(FilePart filePart, UUID id);
 
+    Mono<Void> deleteObject(UUID externalId);
+
     Flux<DataBuffer> filesWithMeta(List<String> objectName);
 
     Flux<DataBuffer> filesWithMeta(UUID externalId, String boundary);
