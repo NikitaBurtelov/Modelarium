@@ -14,6 +14,6 @@ public interface MediaService {
             UUID externalId,
             UUID authorId,
             Flux<FilePart> files);
-
+    Mono<Void> delete(UUID externalId);
     Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByExternalId(UUID externalId);
 }

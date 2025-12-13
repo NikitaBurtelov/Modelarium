@@ -77,7 +77,8 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Mono<Void> deletePost(Long postId, String authorId) {
+    public Mono<Void> deletePost(UUID postId, String authorId) {
+        postReactiveRepository.deleteById(postId);
         return null;
     }
 

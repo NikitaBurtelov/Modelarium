@@ -19,6 +19,6 @@ public interface PostService {
 
     Mono<PostDataResponse> updatePost(Long postId, PostUpdateRequest request, String authorId);
 
-    Mono<Void> deletePost(Long postId, String authorId);
+    Mono<Void> deletePost(UUID postId, String authorId);
 }
 

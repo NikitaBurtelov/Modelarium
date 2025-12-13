@@ -1,6 +1,6 @@
 package org.modelarium.post;
 
-import org.modelarium.post.config.DotenvPropertySourceInitializer;
+import org.modelarium.post.config.properties.DotenvPropertySourceInitializer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;

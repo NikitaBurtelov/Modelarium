@@ -1,4 +1,4 @@
-package org.modelarium.post.config;
+package org.modelarium.post.config.properties;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.github.cdimascio.dotenv.DotenvEntry;

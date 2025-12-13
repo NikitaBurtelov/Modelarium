@@ -50,7 +50,7 @@ public class PostController {
 
     @DeleteMapping("/{postId}")
     public Mono<ResponseEntity> deletePost(@PathVariable UUID postId) {
-        //TODO
-        return null;
+        return mediaService.delete(postId)
+                .then(Mono.just(ResponseEntity.ok().build()));
     }
 }

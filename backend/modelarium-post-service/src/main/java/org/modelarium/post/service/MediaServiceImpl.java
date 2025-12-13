@@ -27,6 +27,17 @@ public class MediaServiceImpl implements MediaService {
 
     private static final String BOUNDARY = "----WebKitFormBoundary7MA4YWxkTrZu0gW";
 
+    @Override
+    public Mono<Void> delete(UUID externalId) {
+        return webClient.delete()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/items/{externalId}")
+                        .build(externalId)
+                )
+                .retrieve()
+                .bodyToMono(Void.class);
+    }
+
     public Mono<ResponseEntity<MediaUploadResponse>> upload(
             UUID externalId,
             UUID authorId,
@@ -55,7 +66,6 @@ public class MediaServiceImpl implements MediaService {
         return Flux.just(stringToBuffer(part));
     }
 
-
     private Flux<DataBuffer> filePartToDataBuffers(FilePart filePart) {
         String header =
                 "--" + BOUNDARY + "\r\n" +
@@ -81,35 +91,6 @@ public class MediaServiceImpl implements MediaService {
         byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
         return new DefaultDataBufferFactory().wrap(bytes);
     }
-
-//    @Override
-//    public Mono<ResponseEntity<MediaUploadResponse>> upload(
-//            UUID externalId,
-//            UUID authorId,
-//            Flux<FilePart> files) {
-//
-//        return files
-//                .flatMap(this::filePartToResource)
-//                .collectList()
-//                .flatMap(resources -> {
-//                   MultipartBodyBuilder builder = new MultipartBodyBuilder();
-//                   builder.part("id", externalId.toString());
-//
-//                   for (NamedByteArrayResource resource : resources) {
-//                       builder.part("files", resource)
-//                               .filename(resource.getFilename());
-//                   }
-//
-//                    return webClient.post()
-//                            .uri("/api/media/img")
-//                            .contentType(MediaType.MULTIPART_FORM_DATA)
-//                            .header("author-id", authorId.toString())
-//                            .body(BodyInserters.fromMultipartData(builder.build()))
-//                            .retrieve()
-//                            .toEntity(new ParameterizedTypeReference<MediaUploadResponse>() {});
-//                });
-//    }
-
 
     //TODO подумать стоит ли делать проксирование
     @Override
