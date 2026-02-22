@@ -58,3 +58,5 @@ amplicode.xml
 .env
 infra/local
 infra/prod
+/frontend/
+/.vscode/
