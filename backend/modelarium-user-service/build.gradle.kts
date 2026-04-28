@@ -3,6 +3,7 @@ plugins {
     kotlin("plugin.spring")
     kotlin("plugin.allopen")
     kotlin("plugin.noarg")
+    id("java")
     id("org.springframework.boot")
     id("io.spring.dependency-management")
     id("jacoco")
@@ -12,27 +13,32 @@ group = "${rootProject.group}.user"
 version = rootProject.version
 
 dependencies {
-    implementation(rootProject.extra["kotlinCoroutines"] as String)
-
+    implementation(rootProject.extra["springBootStarterWeb"] as String)
+    implementation(rootProject.extra["SpringBootStarterWebFlux"] as String) //webClient
+    implementation(rootProject.extra["springBootStarterActuator"] as String)
+    implementation(rootProject.extra["springBootStarterLogging"] as String)
     implementation(rootProject.extra["springBootStarterDataJpa"] as String)
     implementation(rootProject.extra["springBootStarterLogging"] as String)
+    implementation(rootProject.extra["springBootStarterDataJdbc"] as String)
+    implementation(rootProject.extra["springBootStarterJdbc"] as String)
+    implementation(rootProject.extra["springBootStarterValidation"] as String)
+    developmentOnly(rootProject.extra["springBootDevtools"] as String)
 
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
-    implementation("org.springframework.boot:spring-boot-starter-jdbc")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation(rootProject.extra["lombok"] as String)
+    compileOnly(rootProject.extra["lombok"] as String)
+    annotationProcessor(rootProject.extra["lombok"] as String)
 
     implementation(rootProject.extra["postgresql"] as String)
     runtimeOnly(rootProject.extra["postgresql"] as String)
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
-    mainClass.set("org.modelarium.user.UserServiceApplicationKt")
+    mainClass.set("org.modelarium.user.UserServiceApplication")
 }
 
 tasks.register("serviceInfo") {
     doLast {
-        println("Module: auth-service")
+        println("Module: user-service")
         println("Group: ${project.group}, Version: ${project.version}")
     }
 }
