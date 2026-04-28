@@ -13,7 +13,3 @@ done
 
 echo ""
 echo "Docker is running!"
-
-echo "Start infra [local]"
-cd ~/kafka-docker/
-docker-compose up -d
