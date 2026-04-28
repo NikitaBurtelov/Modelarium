@@ -45,6 +45,8 @@ extra.apply {
     set("springBootStarterValidation", "org.springframework.boot:spring-boot-starter-validation")
     set("springBootDevtools", "org.springframework.boot:spring-boot-devtools")
 
+    set("micrometer", "io.micrometer:micrometer-registry-prometheus:1.16.3")
+
     set("postgresql", "org.postgresql:postgresql:42.7.3")
 
     set("jackson", "com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -103,7 +105,9 @@ configure(subprojects) {
         implementation(rootProject.extra["springBootStarterActuator"] as String)
         implementation(rootProject.extra["springBootStarterLogging"] as String)
 
+        implementation(rootProject.extra["micrometer"] as String)
         implementation(rootProject.extra["dotenv"] as String)
+
 
         implementation(rootProject.extra["springDoc"] as String)
 

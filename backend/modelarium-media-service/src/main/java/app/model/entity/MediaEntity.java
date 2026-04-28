@@ -19,6 +19,4 @@ public class MediaEntity {
     private String objectName;
 
     private String contentType;
-
-    private Long size;
 }

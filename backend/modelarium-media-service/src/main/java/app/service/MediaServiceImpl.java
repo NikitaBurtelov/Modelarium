@@ -40,9 +40,9 @@ public class MediaServiceImpl implements MediaService {
 
     @Override
     public Mono<MediaEntity> upload(FilePart filePart, UUID externalId) {
-        UUID id = UUID.randomUUID();
-        String objectName = id + "_" + filePart.filename();
-        String contentType = Objects.requireNonNull(filePart.headers().getContentType()).toString();
+        var id = UUID.randomUUID();
+        var objectName = id + "_" + filePart.filename();
+        var contentType = Objects.requireNonNull(filePart.headers().getContentType()).toString();
 
         return DataBufferUtils.join(filePart.content())
                 .map(DataBuffer::asInputStream)
@@ -66,7 +66,6 @@ public class MediaServiceImpl implements MediaService {
                                 .externalId(externalId)
                                 .objectName(objectName)
                                 .contentType(contentType)
-                                .size(filePart.headers().getContentLength())
                                 .build())
                 .flatMap(entity ->
                         mediaReactiveRepository.insert(entity)

@@ -24,6 +24,7 @@ dependencies {
     compileOnly(rootProject.extra["lombok"] as String)
     annotationProcessor(rootProject.extra["lombok"] as String)
     developmentOnly(rootProject.extra["springBootDevtools"] as String)
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {

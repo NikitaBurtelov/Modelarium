@@ -65,7 +65,7 @@ public class MediaController {
                 });
     }
 
-    @GetMapping("/img/multiple/by-name")
+    @GetMapping("/name")
     public Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByName(@RequestParam List<String> objectName) {
         log.info("Request to download multiple files has been received.");
 
