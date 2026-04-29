@@ -1,12 +1,13 @@
 package app.controller;
 
 import app.model.dto.MediaData;
-import app.model.dto.MediaUploadResponse;
+import app.model.dto.MediaResponse;
 import app.service.MediaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
@@ -24,16 +25,17 @@ public class MediaController {
     private final MediaService mediaService;
 
     @PostMapping("/img")
-    public Mono<ResponseEntity<MediaUploadResponse>> upload(
+    public Mono<ResponseEntity<MediaResponse>> upload(
             @RequestPart("files") Flux<FilePart> files,
             @RequestPart("id") String externalId) {
         log.info("Multiple file upload request received");
+        var externalIdUuid =  UUID.fromString(externalId);
         return files.flatMap(filePart ->
-                        mediaService.upload(filePart, UUID.fromString(externalId))
+                        mediaService.upload(filePart, externalIdUuid)
                                 .doOnSuccess(
-                                        mediaEntity -> log.info(
+                                        mediaUploadResult -> log.info(
                                                 "File {} uploaded successfully",
-                                                mediaEntity.getObjectName()
+                                                mediaUploadResult.mediaEntity().getObjectName()
                                         )
                                 )
                                 .doOnError(
@@ -44,28 +46,52 @@ public class MediaController {
                                                     ex
                                             );
                                         })
-                                //TODO подумать откатывать ли всю загрузку при ошибке ?
-                                //Пока пусть будет возможность частичной загрузки
                                 .onErrorResume(ex -> Mono.empty())
                 )
                 .collectList()
-                .map(mediaEntities -> {
-                    List<MediaData> mediaDataList = mediaEntities.stream()
-                            .map(me -> {
-                                MediaData md = new MediaData();
-                                md.setId(me.getId());
-                                md.setObjectName(me.getObjectName());
-                                return md;
-                            })
-                            .toList();
-                    MediaUploadResponse response = MediaUploadResponse.builder()
-                            .mediaData(mediaDataList).build();
+                .map(list ->
+                        list.stream()
+                                .map(result -> {
+                                    var entity = result.mediaEntity();
+                                    var objectName = entity.getObjectName();
 
-                    return ResponseEntity.ok(response);
-                });
+                                    return MediaData.builder()
+                                            .id(entity.getId())
+                                            .objectName(objectName)
+                                            .mediaUrl(result.mediaUrls().get(objectName))
+                                            .build();
+
+                                }).toList()
+                )
+                .map(response -> ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(MediaResponse.builder()
+                                .mediaData(response)
+                                .build())
+                );
     }
 
-    @GetMapping("/name")
+    @GetMapping("/img/urls/name")
+    public Mono<ResponseEntity<MediaResponse>> getMediaUrlsByName(@RequestParam List<String> keys) {
+        log.info("A request was received to obtain URLs of uploaded files by key.");
+
+        return mediaService.getMediaUrlsByNama(keys)
+                .map(response -> ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(response));
+    }
+
+    @GetMapping("/img/urls/id")
+    public Mono<ResponseEntity<MediaResponse>> getMediaUrlsById(@RequestParam("externalId") List<UUID> externalId) {
+        log.info("A request was received to obtain URLs of uploaded files by id.");
+
+        return mediaService.getMediaUrlsById(externalId)
+                .map(response -> ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(response));
+    }
+
+    @GetMapping("/img/source/multiple/name")
     public Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByName(@RequestParam List<String> objectName) {
         log.info("Request to download multiple files has been received.");
 
@@ -79,7 +105,7 @@ public class MediaController {
     }
 
     @CrossOrigin(origins = "*") //TODO потом убрать
-    @GetMapping("/img/multiple/by-external-id")
+    @GetMapping("/img/source/multiple/by-external-id")
     public Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByExternalId(@RequestParam("externalId") UUID externalId) {
         log.info("Request to download multiple files has been received.");
         String boundary = "boundary-" + UUID.randomUUID();

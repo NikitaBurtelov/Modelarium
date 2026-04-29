@@ -1,6 +1,9 @@
 package app.service;
 
 import app.config.properties.MinIOProperties;
+import app.model.dto.MediaData;
+import app.model.dto.MediaResponse;
+import app.model.dto.MediaUploadResult;
 import app.model.entity.MediaEntity;
 import app.repository.MediaReactiveRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +28,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -39,9 +43,9 @@ public class MediaServiceImpl implements MediaService {
     private final TransactionalOperator transactionalOperator;
 
     @Override
-    public Mono<MediaEntity> upload(FilePart filePart, UUID externalId) {
+    public Mono<MediaUploadResult> upload(FilePart filePart, UUID externalId) {
         var id = UUID.randomUUID();
-        var objectName = id + "_" + filePart.filename();
+        var key = id + "_" + filePart.filename();
         var contentType = Objects.requireNonNull(filePart.headers().getContentType()).toString();
 
         return DataBufferUtils.join(filePart.content())
@@ -51,49 +55,64 @@ public class MediaServiceImpl implements MediaService {
                                     storageService.putObject(
                                             PutObjectRequest.builder()
                                                     .bucket(minIOProperties.getImg().getBucketName())
-                                                    .key(objectName)
+                                                    .key(key)
                                                     .contentType(contentType)
                                                     .build(),
                                             RequestBody.fromInputStream(stream, stream.available())
                                     );
-                                    log.info("File uploaded to storage. Key: {}", objectName);
-                                    return stream;
+                                    log.info("File uploaded to storage. Key: {}", key);
+
+                                    var mediaUrls = storageService.getMediaUrls(minIOProperties.getImg().getBucketName(), List.of(key));
+                                    var mediaEntity = MediaEntity.builder()
+                                            .id(id)
+                                            .externalId(externalId)
+                                            .objectName(key)
+                                            .contentType(contentType)
+                                            .build();
+
+                                    return MediaUploadResult.builder()
+                                            .mediaEntity(mediaEntity)
+                                            .mediaUrls(mediaUrls)
+                                            .build();
                                 })
                                 .subscribeOn(Schedulers.boundedElastic()))
-                .map(stream ->
-                        MediaEntity.builder()
-                                .id(id)
-                                .externalId(externalId)
-                                .objectName(objectName)
-                                .contentType(contentType)
-                                .build())
-                .flatMap(entity ->
-                        mediaReactiveRepository.insert(entity)
+                .flatMap(mediaUploadResult ->
+                        mediaReactiveRepository.insert(mediaUploadResult.mediaEntity())
                                 .as(transactionalOperator::transactional)
-                                .onErrorResume(e -> {
-                                    return Mono.fromRunnable(() -> {
-                                        try {
-                                            storageService.deleteObject(
-                                                    DeleteObjectRequest.builder()
-                                                            .bucket(minIOProperties.getImg().getBucketName())
-                                                            .key(objectName)
-                                                            .build()
-                                            );
-                                            log.info(
-                                                    "Error saving entity, deleting file from S3. Key: {}. Error: {}",
-                                                    objectName,
-                                                    e
-                                            );
-                                        } catch (Exception ex) {
-                                            log.error(
-                                                    "Error deleting file from storage. Key: {}. Error: {}",
-                                                    objectName,
-                                                    ex
-                                            );
-                                        }
-                                    }).then(Mono.error(e));
-                                })
-                );
+                                .map(saved -> Map.entry(saved, mediaUploadResult.mediaUrls()))
+                )
+                .map(entry -> {
+                    MediaEntity entity = entry.getKey();
+                    Map<String, String> urls = entry.getValue();
+
+                    return MediaUploadResult.builder()
+                            .mediaEntity(entity)
+                            .mediaUrls(urls)
+                            .build();
+                })
+                .onErrorResume(e -> {
+                    return Mono.fromRunnable(() -> {
+                        try {
+                            storageService.deleteObject(
+                                    DeleteObjectRequest.builder()
+                                            .bucket(minIOProperties.getImg().getBucketName())
+                                            .key(key)
+                                            .build()
+                            );
+                            log.info(
+                                    "Error saving entity, deleting file from S3. Key: {}. Error: {}",
+                                    key,
+                                    e
+                            );
+                        } catch (Exception ex) {
+                            log.error(
+                                    "Error deleting file from storage. Key: {}. Error: {}",
+                                    key,
+                                    ex
+                            );
+                        }
+                    }).then(Mono.error(e));
+                });
     }
 
     @Override
@@ -122,13 +141,48 @@ public class MediaServiceImpl implements MediaService {
         return multipleFilesWithMeta(externalId, boundary);
     }
 
-    private Flux<DataBuffer> singleFileWithMeta(String objectName) {
+    @Override
+    public Mono<MediaResponse> getMediaUrlsByNama(List<String> keys) {
+        return mediaReactiveRepository
+                .findAllByObjectNameIn(keys)
+                .collectList()
+                .flatMap(entities -> Mono.fromCallable(
+                                () -> storageService.getMediaUrls(
+                                        minIOProperties.getImg().getBucketName(),
+                                        keys
+                                )
+                        ).subscribeOn(Schedulers.boundedElastic())
+                        .map(mediaUrls -> toMediaGetResponse(entities, mediaUrls)));
+    }
+
+    @Override
+    public Mono<MediaResponse> getMediaUrlsById(List<UUID> ids) {
+        return mediaReactiveRepository.findAllByExternalIdIn(ids)
+                .collectList()
+                .flatMap(entities -> {
+
+                    List<String> keys = entities.stream()
+                            .map(MediaEntity::getObjectName)
+                            .toList();
+
+                    return Mono.fromCallable(() ->
+                                    storageService.getMediaUrls(
+                                            minIOProperties.getImg().getBucketName(),
+                                            keys
+                                    )
+                            )
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .map(mediaUrls -> toMediaGetResponse(entities, mediaUrls));
+                });
+    }
+
+    private Flux<DataBuffer> singleFileWithMeta(String key) {
         Mono<ResponseInputStream<GetObjectResponse>> s3ObjectMono =
                 Mono.fromCallable(() ->
                                 storageService.getObject(
                                         GetObjectRequest.builder()
                                                 .bucket(minIOProperties.getImg().getBucketName())
-                                                .key(objectName)
+                                                .key(key)
                                                 .build()
                                 )
                         )
@@ -137,13 +191,13 @@ public class MediaServiceImpl implements MediaService {
                         .doOnError(ex ->
                                 log.error(
                                         "Error fetching file {} from S3: {}",
-                                        objectName,
+                                        key,
                                         ex.getMessage()
                                 )
                         );
         return s3ObjectMono.flatMapMany(s3Object -> {
             long fileSize = s3Object.response().contentLength();
-            String metaData = String.format("{\"name\":\"%s\",\"size\":%d}\n", objectName, fileSize);
+            String metaData = String.format("{\"name\":\"%s\",\"size\":%d}\n", key, fileSize);
 
             Flux<DataBuffer> fileFlux = DataBufferUtils.readInputStream(
                     () -> s3Object,
@@ -157,8 +211,8 @@ public class MediaServiceImpl implements MediaService {
                             fileFlux
                     )
                     .onErrorResume(ex -> {
-                        log.error("Error streaming file {}: {}", objectName, ex.getMessage());
-                        String errorMeta = String.format("{\"name\":\"%s\",\"error\":\"%s\"}\n", objectName, ex.getMessage());
+                        log.error("Error streaming file {}: {}", key, ex.getMessage());
+                        String errorMeta = String.format("{\"name\":\"%s\",\"error\":\"%s\"}\n", key, ex.getMessage());
                         return Flux.just(new DefaultDataBufferFactory().wrap(errorMeta.getBytes()));
                     });
         });
@@ -217,5 +271,19 @@ public class MediaServiceImpl implements MediaService {
                     String closing = "--" + boundary + "--\r\n";
                     return Mono.just(factory.wrap(closing.getBytes(StandardCharsets.UTF_8)));
                 }));
+    }
+
+    private MediaResponse toMediaGetResponse(List<MediaEntity> mediaEntities, Map<String, String> mediaUrls) {
+        List<MediaData> mediaData = mediaEntities.stream()
+                .map(entity -> MediaData.builder()
+                        .id(entity.getId())
+                        .objectName(entity.getObjectName())
+                        .mediaUrl(mediaUrls.get(entity.getObjectName()))
+                        .build()
+                ).toList();
+
+        return MediaResponse.builder()
+                .mediaData(mediaData)
+                .build();
     }
 }

@@ -6,6 +6,8 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 
 interface StorageService {
     PutObjectResponse putObject(PutObjectRequest request, RequestBody body);
@@ -14,5 +16,7 @@ interface StorageService {
 
     ResponseInputStream<GetObjectResponse> getObject(GetObjectRequest request);
 
-    DeleteObjectResponse deleteObject(DeleteObjectRequest request);
+    void deleteObject(DeleteObjectRequest request);
+
+    Map<String, String> getMediaUrls(String bucket, List<String> key);
 }

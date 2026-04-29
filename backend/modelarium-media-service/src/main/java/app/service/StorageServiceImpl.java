@@ -6,14 +6,21 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 class StorageServiceImpl implements StorageService {
     private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
 
     @Override
     public PutObjectResponse putObject(PutObjectRequest request, RequestBody body) {
@@ -38,7 +45,30 @@ class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public DeleteObjectResponse deleteObject(DeleteObjectRequest request) {
-        return s3Client.deleteObject(request);
+    public void deleteObject(DeleteObjectRequest request) {
+        s3Client.deleteObject(request);
+    }
+
+    @Override
+    public Map<String, String> getMediaUrls(String bucket, List<String> keys) {
+        return keys.stream()
+                .collect(Collectors.toMap(
+                        key -> key,
+                        key -> {
+                            var objectRequest = GetObjectRequest.builder()
+                                    .bucket(bucket)
+                                    .key(key)
+                                    .build();
+                            var presignedRequest = GetObjectPresignRequest.builder()
+                                    .signatureDuration(Duration.ofMinutes(5))
+                                    .getObjectRequest(objectRequest)
+                                    .build();
+
+                            return s3Presigner.presignGetObject(presignedRequest)
+                                    .url()
+                                    .toString();
+                        },
+                        (a, b) -> a
+                ));
     }
 }
