@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Log4j2
 @RestController
@@ -49,19 +50,20 @@ public class MediaController {
                                 .onErrorResume(ex -> Mono.empty())
                 )
                 .collectList()
-                .map(list ->
-                        list.stream()
-                                .map(result -> {
-                                    var entity = result.mediaEntity();
-                                    var objectName = entity.getObjectName();
-
-                                    return MediaData.builder()
-                                            .id(entity.getId())
-                                            .objectName(objectName)
-                                            .mediaUrl(result.mediaUrls().get(objectName))
-                                            .build();
-
-                                }).toList()
+                .map(mediaUploadResult ->
+                        mediaUploadResult.stream()
+                                .collect(Collectors.groupingBy(
+                                        mediaUploadResultItem -> mediaUploadResultItem.mediaEntity().getExternalId(),
+                                        Collectors.mapping(mediaUploadResultItem -> {
+                                                    var mediaEntity = mediaUploadResultItem.mediaEntity();
+                                                    return MediaData.builder()
+                                                            .id(mediaEntity.getId())
+                                                            .objectName(mediaEntity.getObjectName())
+                                                            .mediaUrl(mediaUploadResultItem.mediaUrls().get(mediaEntity.getObjectName()))
+                                                            .build();
+                                                },
+                                                Collectors.toList())
+                                ))
                 )
                 .map(response -> ResponseEntity
                         .status(HttpStatus.OK)
@@ -71,8 +73,8 @@ public class MediaController {
                 );
     }
 
-    @GetMapping("/img/urls/name")
-    public Mono<ResponseEntity<MediaResponse>> getMediaUrlsByName(@RequestParam List<String> keys) {
+    @PostMapping("/img/urls/key")
+    public Mono<ResponseEntity<MediaResponse>> getMediaUrlsByName(@RequestPart("keys") List<String> keys) {
         log.info("A request was received to obtain URLs of uploaded files by key.");
 
         return mediaService.getMediaUrlsByNama(keys)
@@ -81,8 +83,8 @@ public class MediaController {
                         .body(response));
     }
 
-    @GetMapping("/img/urls/id")
-    public Mono<ResponseEntity<MediaResponse>> getMediaUrlsById(@RequestParam("externalId") List<UUID> externalId) {
+    @PostMapping("/img/urls/id")
+    public Mono<ResponseEntity<MediaResponse>> getMediaUrlsById(@RequestPart("id") List<UUID> externalId) {
         log.info("A request was received to obtain URLs of uploaded files by id.");
 
         return mediaService.getMediaUrlsById(externalId)
@@ -91,8 +93,8 @@ public class MediaController {
                         .body(response));
     }
 
-    @GetMapping("/img/source/multiple/name")
-    public Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByName(@RequestParam List<String> objectName) {
+    @PostMapping("/img/source/multiple/name")
+    public Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByName(@RequestPart List<String> objectName) {
         log.info("Request to download multiple files has been received.");
 
         Flux<DataBuffer> flux = mediaService.filesWithMeta(objectName);

@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Log4j2
@@ -274,13 +275,20 @@ public class MediaServiceImpl implements MediaService {
     }
 
     private MediaResponse toMediaGetResponse(List<MediaEntity> mediaEntities, Map<String, String> mediaUrls) {
-        List<MediaData> mediaData = mediaEntities.stream()
-                .map(entity -> MediaData.builder()
-                        .id(entity.getId())
-                        .objectName(entity.getObjectName())
-                        .mediaUrl(mediaUrls.get(entity.getObjectName()))
-                        .build()
-                ).toList();
+        Map<UUID, List<MediaData>> mediaData = mediaEntities.stream()
+                .collect(
+                        Collectors.groupingBy(
+                                MediaEntity::getExternalId,
+                                Collectors.mapping(
+                                        entity -> MediaData.builder()
+                                                .id(entity.getId())
+                                                .objectName(entity.getObjectName())
+                                                .mediaUrl(mediaUrls.get(entity.getObjectName()))
+                                                .build(),
+                                        Collectors.toList()
+                                )
+
+                        ));
 
         return MediaResponse.builder()
                 .mediaData(mediaData)
