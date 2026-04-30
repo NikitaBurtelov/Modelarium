@@ -13,6 +13,14 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at timestamptz DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS media_files (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    external_id UUID,
+    object_name TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    size BIGINT NOT NULL CHECK (size >= 0)
+);
+
 CREATE TABLE IF NOT EXISTS refresh_tokens (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES users(id) ON DELETE CASCADE,
@@ -29,4 +37,4 @@ ALTER TABLE refresh_tokens
 
 CREATE INDEX IF NOT EXISTS idx_refresh_token_token_id ON refresh_tokens(token_id);
 
-UPDATE refresh_tokens SET token_id = gen_random_uuid() WHERE token_id IS NULL;
+UPDATE refresh_tokens IF NOT EXISTS SET token_id = gen_random_uuid() WHERE token_id IS NULL;
