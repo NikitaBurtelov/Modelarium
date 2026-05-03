@@ -1,5 +1,6 @@
 package app.service;
 
+import app.config.properties.MinIOProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 class StorageServiceImpl implements StorageService {
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
+    private final MinIOProperties properties;
 
     @Override
     public PutObjectResponse putObject(PutObjectRequest request, RequestBody body) {
@@ -60,7 +62,7 @@ class StorageServiceImpl implements StorageService {
                                     .key(key)
                                     .build();
                             var presignedRequest = GetObjectPresignRequest.builder()
-                                    .signatureDuration(Duration.ofMinutes(5))
+                                    .signatureDuration(Duration.ofMinutes(properties.getImg().getSignatureDuration()))
                                     .getObjectRequest(objectRequest)
                                     .build();
 

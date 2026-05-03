@@ -282,7 +282,7 @@ public class MediaServiceImpl implements MediaService {
                                 Collectors.mapping(
                                         entity -> MediaData.builder()
                                                 .id(entity.getId())
-                                                .objectName(entity.getObjectName())
+                                                .objectKey(entity.getObjectName())
                                                 .mediaUrl(mediaUrls.get(entity.getObjectName()))
                                                 .build(),
                                         Collectors.toList()

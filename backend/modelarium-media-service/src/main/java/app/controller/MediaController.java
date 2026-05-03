@@ -58,7 +58,7 @@ public class MediaController {
                                                     var mediaEntity = mediaUploadResultItem.mediaEntity();
                                                     return MediaData.builder()
                                                             .id(mediaEntity.getId())
-                                                            .objectName(mediaEntity.getObjectName())
+                                                            .objectKey(mediaEntity.getObjectName())
                                                             .mediaUrl(mediaUploadResultItem.mediaUrls().get(mediaEntity.getObjectName()))
                                                             .build();
                                                 },

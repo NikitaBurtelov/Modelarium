@@ -11,6 +11,6 @@ import java.util.UUID;
 @Builder
 public class MediaData {
     private UUID id;
-    private String objectName;
+    private String objectKey;
     private String mediaUrl;
 }
