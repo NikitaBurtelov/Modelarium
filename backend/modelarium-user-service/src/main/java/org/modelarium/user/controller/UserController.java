@@ -21,6 +21,7 @@ import java.util.UUID;
 public class UserController {
     private final UserService userService;
 
+    @CrossOrigin(origins = "*") //TODO потом убрать
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UserCreateResponse> create(
             @RequestPart("request") UserCreateRequest request,
@@ -30,6 +31,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @CrossOrigin(origins = "*") //TODO потом убрать
     @GetMapping(value = "/{userId}")
     public ResponseEntity<UserGetResponse> getUserById(@PathVariable UUID userId) {
         log.info("");
@@ -38,6 +40,7 @@ public class UserController {
                 .body(user);
     }
 
+    @CrossOrigin(origins = "*") //TODO потом убрать
     @PostMapping(value = "/")
     public ResponseEntity<UserGetResponse> getUsers(@RequestPart("request") UserGetRequest request) {
         log.info("");
