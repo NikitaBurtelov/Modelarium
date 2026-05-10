@@ -23,6 +23,30 @@ export async function createPost({ authorId, request, files = [] }) {
     });
 }
 
+export async function getPosts({ sequenceId, createdAt, size = 20 } = {}) {
+    const params = new URLSearchParams();
+
+    if (sequenceId !== undefined && sequenceId !== null) {
+        params.set("sequenceId", String(sequenceId));
+    }
+
+    if (createdAt) {
+        params.set(
+            "createdAt",
+            createdAt instanceof Date ? createdAt.toISOString() : String(createdAt)
+        );
+    }
+
+    if (size !== undefined && size !== null) {
+        params.set("size", String(size));
+    }
+
+    const query = params.toString();
+    const url = query ? `${POST_API}/api/post?${query}` : `${POST_API}/api/post`;
+
+    return apiFetch(url);
+}
+
 export async function getPostById(postId) {
     return apiFetch(`${POST_API}/api/post/${postId}`);
 }
