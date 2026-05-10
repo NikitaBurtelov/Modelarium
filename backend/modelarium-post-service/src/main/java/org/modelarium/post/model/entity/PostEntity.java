@@ -16,6 +16,8 @@ public class PostEntity {
     @Id
     private UUID id;
 
+    private Long sequenceId;
+
     private UUID authorId;
 
     private String description;

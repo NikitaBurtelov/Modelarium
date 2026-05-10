@@ -10,7 +10,7 @@ public record PostDataResponse(
         String description,
         List<String> tags,
         List<String> mentions,
-        List<UUID> media,
+        List<MediaData> media,
         Instant createdAt
 ) {
 }

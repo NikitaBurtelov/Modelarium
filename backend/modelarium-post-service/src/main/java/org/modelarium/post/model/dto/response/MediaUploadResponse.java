@@ -2,14 +2,17 @@ package org.modelarium.post.model.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
-import org.modelarium.post.model.dto.util.MediaData;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Setter
 @Getter
 @Builder
 public class MediaUploadResponse {
-    private List<MediaData> mediaData;
+    @NonNull
+    private Map<UUID, List<MediaData>> mediaData;
 }

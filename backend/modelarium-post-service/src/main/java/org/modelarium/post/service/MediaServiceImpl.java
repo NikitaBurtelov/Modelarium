@@ -1,6 +1,8 @@
 package org.modelarium.post.service;
 
 import lombok.RequiredArgsConstructor;
+import org.modelarium.post.config.properties.WebProperties;
+import org.modelarium.post.model.dto.response.MediaGetResponse;
 import org.modelarium.post.model.dto.response.MediaUploadResponse;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
@@ -12,24 +14,26 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class MediaServiceImpl implements MediaService {
-    private final WebClient webClient;
-
-    private static final String BOUNDARY = "----WebKitFormBoundary7MA4YWxkTrZu0gW";
+    private final WebClient mediaWebClient;
+    private final WebProperties webProperties;
 
     @Override
     public Mono<Void> delete(UUID externalId) {
-        return webClient.delete()
+        return mediaWebClient.delete()
                 .uri(uriBuilder -> uriBuilder
                         .path("/items/{externalId}")
                         .build(externalId)
@@ -38,26 +42,45 @@ public class MediaServiceImpl implements MediaService {
                 .bodyToMono(Void.class);
     }
 
+    @Override
     public Mono<ResponseEntity<MediaUploadResponse>> upload(
             UUID externalId,
             UUID authorId,
             Flux<FilePart> files
     ) {
+        var BOUNDARY = webProperties.getBoundary();
         Flux<DataBuffer> jsonPart = createFormField("id", externalId.toString());
         Flux<DataBuffer> fileParts = files.flatMap(this::filePartToDataBuffers);
         DataBuffer lastBoundary = createEndBoundary();
         Flux<DataBuffer> body = Flux.concat(jsonPart, fileParts, Mono.just(lastBoundary));
 
-        return webClient.post()
+        return mediaWebClient.post()
                 .uri("/api/media/img")
                 .header(HttpHeaders.CONTENT_TYPE, "multipart/form-data; boundary=" + BOUNDARY)
                 .header("author-id", authorId.toString())
                 .body(BodyInserters.fromDataBuffers(body))
                 .retrieve()
-                .toEntity(new ParameterizedTypeReference<MediaUploadResponse>() {});
+                .toEntity(new ParameterizedTypeReference<MediaUploadResponse>() {
+                });
+    }
+
+    public Mono<ResponseEntity<MediaGetResponse>> getMediaUrlsById(List<UUID> ids) {
+        MultiValueMap<String, Object> requestBody = new LinkedMultiValueMap<>();
+
+        requestBody.add("ids", ids);
+
+        return mediaWebClient.post()
+                .uri("/api/media/img/urls/ids")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromMultipartData(requestBody))
+                .retrieve()
+                .toEntity(new ParameterizedTypeReference<MediaGetResponse>() {
+                });
     }
 
     private Flux<DataBuffer> createFormField(String name, String value) {
+        var BOUNDARY = webProperties.getBoundary();
         String part =
                 "--" + BOUNDARY + "\r\n" +
                         "Content-Disposition: form-data; name=\"" + name + "\"\r\n" +
@@ -67,6 +90,7 @@ public class MediaServiceImpl implements MediaService {
     }
 
     private Flux<DataBuffer> filePartToDataBuffers(FilePart filePart) {
+        var BOUNDARY = webProperties.getBoundary();
         String header =
                 "--" + BOUNDARY + "\r\n" +
                         "Content-Disposition: form-data; name=\"files\"; filename=\"" + filePart.filename() + "\"\r\n" +
@@ -83,6 +107,7 @@ public class MediaServiceImpl implements MediaService {
     }
 
     private DataBuffer createEndBoundary() {
+        var BOUNDARY = webProperties.getBoundary();
         String end = "--" + BOUNDARY + "--\r\n";
         return stringToBuffer(end);
     }
@@ -95,7 +120,7 @@ public class MediaServiceImpl implements MediaService {
     //TODO подумать стоит ли делать проксирование
     @Override
     public Mono<ResponseEntity<Flux<DataBuffer>>> downloadMultipleByExternalId(UUID externalId) {
-        return webClient.get()
+        return mediaWebClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/img/multiple/by-external-id")
                         .queryParam("externalId", externalId)
@@ -109,14 +134,14 @@ public class MediaServiceImpl implements MediaService {
     private Mono<NamedByteArrayResource> filePartToResource(FilePart part) {
         return DataBufferUtils.join(part.content())
                 .map(dataBuffer -> {
-                   try {
-                       int readable = dataBuffer.readableByteCount();
-                       byte[] bytes = new byte[readable];
-                       dataBuffer.read(bytes);
-                       return new NamedByteArrayResource(bytes, part.filename());
-                   } finally {
-                       DataBufferUtils.release(dataBuffer);
-                   }
+                    try {
+                        int readable = dataBuffer.readableByteCount();
+                        byte[] bytes = new byte[readable];
+                        dataBuffer.read(bytes);
+                        return new NamedByteArrayResource(bytes, part.filename());
+                    } finally {
+                        DataBufferUtils.release(dataBuffer);
+                    }
                 });
     }
 

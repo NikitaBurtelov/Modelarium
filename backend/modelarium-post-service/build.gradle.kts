@@ -17,6 +17,7 @@ dependencies {
     implementation(rootProject.extra["springBootStarterLogging"] as String)
     implementation(rootProject.extra["SpringBootStarterWebFlux"] as String)
     implementation(rootProject.extra["SpringBootStarterR2dbc"] as String)
+    implementation(rootProject.extra["springDocReact"] as String)
     implementation(rootProject.extra["r2dbcPostgresql"] as String)
     implementation(rootProject.extra["reactKafka"] as String)
     implementation(rootProject.extra["lombok"] as String)
