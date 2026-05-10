@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 class StorageServiceImpl implements StorageService {
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
-    private final MinIOProperties properties;
 
     @Override
     public PutObjectResponse putObject(PutObjectRequest request, RequestBody body) {
@@ -62,7 +61,7 @@ class StorageServiceImpl implements StorageService {
                                     .key(key)
                                     .build();
                             var presignedRequest = GetObjectPresignRequest.builder()
-                                    .signatureDuration(Duration.ofMinutes(properties.getImg().getSignatureDuration()))
+                                    .signatureDuration(Duration.ofMinutes(30))
                                     .getObjectRequest(objectRequest)
                                     .build();
 

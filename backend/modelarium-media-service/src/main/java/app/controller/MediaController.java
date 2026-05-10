@@ -3,11 +3,13 @@ package app.controller;
 import app.model.dto.MediaData;
 import app.model.dto.MediaResponse;
 import app.service.MediaService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +27,8 @@ import java.util.stream.Collectors;
 public class MediaController {
     private final MediaService mediaService;
 
-    @PostMapping("/img")
+    @PostMapping(value = "/img", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload images")
     public Mono<ResponseEntity<MediaResponse>> upload(
             @RequestPart("files") Flux<FilePart> files,
             @RequestPart("id") String externalId) {
@@ -83,8 +86,8 @@ public class MediaController {
                         .body(response));
     }
 
-    @PostMapping("/img/urls/id")
-    public Mono<ResponseEntity<MediaResponse>> getMediaUrlsById(@RequestPart("id") List<UUID> externalId) {
+    @PostMapping("/img/urls/ids")
+    public Mono<ResponseEntity<MediaResponse>> getMediaUrlsById(@RequestPart("ids") List<UUID> externalId) {
         log.info("A request was received to obtain URLs of uploaded files by id.");
 
         return mediaService.getMediaUrlsById(externalId)

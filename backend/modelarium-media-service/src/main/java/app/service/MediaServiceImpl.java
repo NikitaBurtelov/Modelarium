@@ -158,7 +158,7 @@ public class MediaServiceImpl implements MediaService {
 
     @Override
     public Mono<MediaResponse> getMediaUrlsById(List<UUID> ids) {
-        return mediaReactiveRepository.findAllByExternalIdIn(ids)
+        return mediaReactiveRepository.findAllById(ids)
                 .collectList()
                 .flatMap(entities -> {
 

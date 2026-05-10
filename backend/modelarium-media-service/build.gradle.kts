@@ -21,6 +21,7 @@ dependencies {
     implementation(rootProject.extra["reactKafka"] as String)
     implementation(rootProject.extra["s3"] as String)
     implementation(rootProject.extra["lombok"] as String)
+    implementation(rootProject.extra["springDocReact"] as String)
     compileOnly(rootProject.extra["lombok"] as String)
     annotationProcessor(rootProject.extra["lombok"] as String)
     developmentOnly(rootProject.extra["springBootDevtools"] as String)

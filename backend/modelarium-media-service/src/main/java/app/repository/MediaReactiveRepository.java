@@ -17,5 +17,7 @@ public interface MediaReactiveRepository
     Flux<MediaEntity> findAllByExternalIdIn(Collection<UUID> externalIds);
 
     Flux<MediaEntity> findAllByObjectNameIn(Collection<String> objectNames);
+
+    Flux<Object> findAllById(UUID id);
 }
 
