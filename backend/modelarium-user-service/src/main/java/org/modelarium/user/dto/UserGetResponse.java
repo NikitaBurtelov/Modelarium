@@ -11,6 +11,4 @@ import java.util.List;
 @Setter
 public class UserGetResponse {
     private List<UserData> userData;
-
-    public UserGetResponse() {}
 }

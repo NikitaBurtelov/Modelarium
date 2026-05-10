@@ -66,7 +66,7 @@ extra.apply {
     set("springExpression", "org.springframework:spring-expression")
     set("springRetry", "org.springframework.retry:spring-retry:2.0.3")
     set("springDoc", "org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
-
+    set("springDocReact", "org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.9")
     set("kotlinLogging", "io.github.microutils:kotlin-logging-jvm:3.0.5")
 
     set("springBootStarterTest", "org.springframework.boot:spring-boot-starter-test")

@@ -27,21 +27,21 @@ public class MediaServiceImpl implements MediaService{
             MediaUploadRequest request,
             MultipartFile file
     ) {
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        MultiValueMap<String, Object> requestBody = new LinkedMultiValueMap<>();
 
-        body.add("id", request.externalId().toString());
-        body.add("files", file.getResource());
+        requestBody.add("id", request.externalId().toString());
+        requestBody.add("files", file.getResource());
 
         return mediaWebClient.post()
                 .uri("/api/media/img")
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .header("author-id", request.authorId())
-                .body(BodyInserters.fromMultipartData(body))
+                .body(BodyInserters.fromMultipartData(requestBody))
                 .retrieve()
                 .onStatus(
                         HttpStatusCode::isError,
                         result -> result.bodyToMono(String.class)
-                                .map(body1 -> new MediaUploadException(file.getOriginalFilename()))
+                                .map(body -> new MediaUploadException(file.getOriginalFilename()))
                 )
                 .bodyToMono(MediaUploadResponse.class)
                 .block();
@@ -49,16 +49,20 @@ public class MediaServiceImpl implements MediaService{
 
     @Override
     public MediaGetResponse getMediaUrlsByKeys(List<String> keys) {
+        MultiValueMap<String, Object> requestBody = new LinkedMultiValueMap<>();
+
+        requestBody.add("keys", keys);
+
         return mediaWebClient.post()
-                .uri("/img/urls/name")
+                .uri("/api/media/img/urls/key")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
-                .bodyValue(keys)
+                .body(BodyInserters.fromMultipartData(requestBody))
                 .retrieve()
                 .onStatus(
                         HttpStatusCode::isError,
                         result -> result.bodyToMono(String.class)
-                                .map(body -> new RuntimeException("Error " + body))
+                                .map( body-> new RuntimeException("Error " + requestBody))
                 )
                 .bodyToMono(MediaGetResponse.class)
                 .block();
@@ -67,7 +71,7 @@ public class MediaServiceImpl implements MediaService{
     @Override
     public MediaGetResponse getMediaUrlsByIds(List<UUID> ids) {
         return mediaWebClient.post()
-                .uri("/img/urls/id")
+                .uri("/api/media/img/urls/id")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .bodyValue(ids)
