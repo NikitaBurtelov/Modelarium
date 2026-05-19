@@ -1,4 +1,6 @@
-package org.modelarium.user.dto;
+package org.modelarium.user.dto.response;
+
+import org.modelarium.user.dto.MediaData;
 
 import java.util.List;
 import java.util.Map;

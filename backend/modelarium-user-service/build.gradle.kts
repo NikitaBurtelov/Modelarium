@@ -24,6 +24,8 @@ dependencies {
     implementation(rootProject.extra["springBootStarterValidation"] as String)
     developmentOnly(rootProject.extra["springBootDevtools"] as String)
 
+    implementation(rootProject.extra["redis"] as String)
+
     implementation(rootProject.extra["lombok"] as String)
     compileOnly(rootProject.extra["lombok"] as String)
     annotationProcessor(rootProject.extra["lombok"] as String)

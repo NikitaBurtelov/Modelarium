@@ -1,7 +1,7 @@
 package org.modelarium.user.service.validation.rules;
 
 import lombok.RequiredArgsConstructor;
-import org.modelarium.user.dto.UserCreateRequest;
+import org.modelarium.user.dto.request.UserCreateRequest;
 import org.modelarium.user.exceptions.EmailAlreadyExistsException;
 import org.modelarium.user.repository.UserRepository;
 import org.springframework.stereotype.Component;

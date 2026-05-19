@@ -1,4 +1,4 @@
-package org.modelarium.user.dto;
+package org.modelarium.user.dto.request;
 
 import java.util.List;
 import java.util.UUID;

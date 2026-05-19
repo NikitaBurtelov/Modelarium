@@ -1,10 +1,19 @@
 package org.modelarium.user.service;
 
 import lombok.RequiredArgsConstructor;
-import org.modelarium.user.dto.*;
+import org.modelarium.user.config.properties.UserServiceProperties;
+import org.modelarium.user.dto.FeedEntity;
+import org.modelarium.user.dto.MediaData;
+import org.modelarium.user.dto.UserData;
+import org.modelarium.user.dto.DataObject;
+import org.modelarium.user.dto.request.*;
+import org.modelarium.user.dto.response.MediaUploadResponse;
+import org.modelarium.user.dto.response.TopUserGetResponse;
+import org.modelarium.user.dto.response.UserGetResponse;
 import org.modelarium.user.exceptions.UserNotFoundException;
 import org.modelarium.user.model.UserEntity;
 import org.modelarium.user.repository.UserRepository;
+import org.modelarium.user.service.cache.CacheService;
 import org.modelarium.user.service.validation.ValidationPipeline;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +28,9 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final MediaService mediaService;
-    private final ValidationPipeline<UserCreateRequest> pipeline;
+    private final CacheService<FeedEntity> cacheService;
+    private final ValidationPipeline<DataObject> pipeline;
+    private final UserServiceProperties userServiceProperties;
 
     @Override
     @Transactional
@@ -76,6 +87,50 @@ public class UserServiceImpl implements UserService {
         return buildUserGetResponse(List.of(user));
     }
 
+    @Override
+    public TopUserGetResponse getTopUsersByCursor(TopUserGetRequest request) {
+        var id = request.eventId();
+        var size = request.size();
+        var sequenceId = request.sequenceId();
+        var key = key(id);
+
+        if (!cacheService.exists(key)) {
+            saveTopUsersInCache(id);
+        }
+
+        if (!cacheService.availableRange(key, sequenceId + size)) {
+            var values = cacheService.getValues(
+                            key,
+                            sequenceId,
+                            sequenceId + size
+                    );
+
+            updateTopUsersInCache(
+                    key,
+                    values.stream()
+                            .map(FeedEntity::getId)
+                            .toList(),
+                    values.getLast().getSequenceId()
+            );
+        }
+
+        var users = userRepository.findAllByIdIn(
+                cacheService.getValues(
+                                key,
+                                sequenceId,
+                                sequenceId + size
+                        ).stream()
+                        .map(FeedEntity::getId)
+                        .toList()
+        );
+
+        return buildTopUserGetResponse(
+                users,
+                request.eventId(),
+                sequenceId + size
+        );
+    }
+
     private UserEntity getRequiredUser(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
@@ -119,18 +174,42 @@ public class UserServiceImpl implements UserService {
         return mapToUserGetResponse(mediaResponse.mediaData(), users);
     }
 
+    private TopUserGetResponse buildTopUserGetResponse(List<UserEntity> users, UUID eventId, int sequenceId) {
+        var mediaResponse = mediaService.getMediaUrlsByKeys(getAvatarKeys(users));
+
+        return mapTopUserGetResponse(mediaResponse.mediaData(), users, eventId, sequenceId);
+    }
+
     private List<String> getAvatarKeys(List<UserEntity> users) {
         return users.stream()
                 .map(UserEntity::getAvatarKey)
                 .toList();
     }
 
-    private UserGetResponse mapToUserGetResponse(Map<UUID, List<MediaData>> mediaByUserId, List<UserEntity> users) {
+    private UserGetResponse mapToUserGetResponse(
+            Map<UUID, List<MediaData>> mediaByUserId,
+            List<UserEntity> users
+    ) {
         return UserGetResponse.builder()
                         .userData(users.stream()
                                 .map(user -> mapToUserData(user, mediaByUserId))
                                 .toList()
                         ).build();
+    }
+
+    private TopUserGetResponse mapTopUserGetResponse(
+            Map<UUID, List<MediaData>> mediaByUserId,
+            List<UserEntity> users,
+            UUID eventId,
+            int sequenceId
+    ) {
+        return TopUserGetResponse.builder()
+                .eventId(eventId)
+                .sequenceId(sequenceId)
+                .userData(users.stream()
+                        .map(user -> mapToUserData(user, mediaByUserId))
+                        .toList()
+                ).build();
     }
 
     private UserData mapToUserData(UserEntity user, Map<UUID, List<MediaData>> mediaByUserId) {
@@ -141,5 +220,43 @@ public class UserServiceImpl implements UserService {
                 .displayName(user.getDisplayName())
                 .mediaData(mediaByUserId.get(user.getId()))
                 .build();
+    }
+
+    private void saveTopUsersInCache(UUID id) {
+        var maxTopUserIterationSize = userServiceProperties.getMaxTopUserIterationSize();
+        var userIds = userRepository.findLatestTopUsers(maxTopUserIterationSize)
+                .stream()
+                .map(result -> FeedEntity.builder()
+                        .id(result.getId())
+                        .build()
+                )
+                .toList();
+
+        cacheService.setValues(
+                key(id),
+                userIds
+        );
+    }
+
+    private void updateTopUsersInCache(String key, List<UUID> userIds, Long sequenceId) {
+        var maxTopUserIterationSize = userServiceProperties.getMaxTopUserIterationSize();
+
+        cacheService.setValues(
+                key,
+                userRepository.findRefreshedTopUsers(
+                                userIds,
+                                sequenceId,
+                                maxTopUserIterationSize
+                        )
+                        .stream()
+                        .map(result -> FeedEntity.builder()
+                                .id(result.getId())
+                                .build()
+                        ).toList()
+        );
+    }
+
+    private String key(UUID id) {
+        return "feed:users:" + id;
     }
 }

@@ -48,6 +48,7 @@ extra.apply {
     set("micrometer", "io.micrometer:micrometer-registry-prometheus:1.16.3")
 
     set("postgresql", "org.postgresql:postgresql:42.7.3")
+    set("redis", "org.springframework.boot:spring-boot-starter-data-redis")
 
     set("jackson", "com.fasterxml.jackson.module:jackson-module-kotlin")
 

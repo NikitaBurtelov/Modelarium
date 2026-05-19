@@ -5,13 +5,10 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.UUID;
-
 @Configuration
-@ConfigurationProperties(prefix = "user")
+@ConfigurationProperties(prefix = "cache")
 @Setter
 @Getter
-public class UserServiceProperties {
-    private UUID defaultAvatarKey;
-    private int maxTopUserIterationSize;
+public class CacheProperties {
+    private int feedTtl;
 }

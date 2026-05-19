@@ -1,6 +1,7 @@
-package org.modelarium.user.dto;
+package org.modelarium.user.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import org.modelarium.user.dto.DataObject;
 
 import java.util.UUID;
 

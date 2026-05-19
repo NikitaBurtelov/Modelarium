@@ -1,9 +1,10 @@
-package org.modelarium.user.dto;
+package org.modelarium.user.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.modelarium.user.dto.MediaData;
 
 import java.util.List;
 import java.util.Map;

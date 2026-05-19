@@ -1,9 +1,9 @@
 package org.modelarium.user.service;
 
 import lombok.RequiredArgsConstructor;
-import org.modelarium.user.dto.MediaGetResponse;
-import org.modelarium.user.dto.MediaUploadRequest;
-import org.modelarium.user.dto.MediaUploadResponse;
+import org.modelarium.user.dto.response.MediaGetResponse;
+import org.modelarium.user.dto.request.MediaUploadRequest;
+import org.modelarium.user.dto.response.MediaUploadResponse;
 import org.modelarium.user.exceptions.MediaUploadException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;

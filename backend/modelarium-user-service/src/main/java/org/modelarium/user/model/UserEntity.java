@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -16,6 +17,8 @@ public class UserEntity {
     @Id
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
+    @Column(name = "sequence_id", updatable = false, nullable = false, unique = true)
+    private Long sequenceId;
     @Column(name = "username", unique = true, nullable = false)
     private String userName;
     @Column(unique = true, nullable = false)
@@ -34,11 +37,14 @@ public class UserEntity {
     private OffsetDateTime createdAt;
     @Column(name = "updated_at", nullable = false, updatable = false)
     private OffsetDateTime updateAt;
+    @Column(name = "popularity_index", nullable = false, updatable = true)
+    private int popularityIndex;
 
     @PrePersist
     protected void onCreate() {
         if (id == null) {
             id = UUID.randomUUID();
+            popularityIndex = 0;
         }
         createdAt = OffsetDateTime.now();
         updateAt = createdAt;
