@@ -1,7 +1,5 @@
 package org.modelarium.user.exceptions;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import java.util.UUID;
 
 public class UserNotFoundException extends RuntimeException {

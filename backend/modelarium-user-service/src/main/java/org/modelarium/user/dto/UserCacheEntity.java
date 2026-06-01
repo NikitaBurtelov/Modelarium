@@ -9,7 +9,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class FeedEntity extends CacheEntity {
+public class UserCacheEntity extends CacheEntity {
     private UUID id;
     private Long sequenceId;
 }

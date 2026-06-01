@@ -39,12 +39,15 @@ public class UserEntity {
     private OffsetDateTime updateAt;
     @Column(name = "popularity_index", nullable = false, updatable = true)
     private int popularityIndex;
+    @Column(name = "follow_count", nullable = false, updatable = true)
+    private int followCount;
 
     @PrePersist
     protected void onCreate() {
         if (id == null) {
             id = UUID.randomUUID();
             popularityIndex = 0;
+            followCount = 0;
         }
         createdAt = OffsetDateTime.now();
         updateAt = createdAt;

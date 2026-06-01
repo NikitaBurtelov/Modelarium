@@ -1,7 +1,7 @@
-package org.modelarium.user.service;
+package org.modelarium.user.service.media;
 
-import org.modelarium.user.dto.response.MediaGetResponse;
 import org.modelarium.user.dto.request.MediaUploadRequest;
+import org.modelarium.user.dto.response.MediaGetResponse;
 import org.modelarium.user.dto.response.MediaUploadResponse;
 import org.springframework.web.multipart.MultipartFile;
 

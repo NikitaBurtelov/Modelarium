@@ -13,4 +13,5 @@ public class WebProperties {
     private String mediaBaseUrl;
     private String postBaseUrl;
     private String notificationBaseUrl;
+    private String uiBaseUrl;
 }

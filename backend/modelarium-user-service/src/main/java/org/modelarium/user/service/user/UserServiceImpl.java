@@ -1,11 +1,11 @@
-package org.modelarium.user.service;
+package org.modelarium.user.service.user;
 
 import lombok.RequiredArgsConstructor;
 import org.modelarium.user.config.properties.UserServiceProperties;
-import org.modelarium.user.dto.FeedEntity;
-import org.modelarium.user.dto.MediaData;
-import org.modelarium.user.dto.UserData;
 import org.modelarium.user.dto.DataObject;
+import org.modelarium.user.dto.MediaData;
+import org.modelarium.user.dto.UserCacheEntity;
+import org.modelarium.user.dto.UserData;
 import org.modelarium.user.dto.request.*;
 import org.modelarium.user.dto.response.MediaUploadResponse;
 import org.modelarium.user.dto.response.TopUserGetResponse;
@@ -14,6 +14,7 @@ import org.modelarium.user.exceptions.UserNotFoundException;
 import org.modelarium.user.model.UserEntity;
 import org.modelarium.user.repository.UserRepository;
 import org.modelarium.user.service.cache.CacheService;
+import org.modelarium.user.service.media.MediaService;
 import org.modelarium.user.service.validation.ValidationPipeline;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,7 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final MediaService mediaService;
-    private final CacheService<FeedEntity> cacheService;
+    private final CacheService<UserCacheEntity> cacheService;
     private final ValidationPipeline<DataObject> pipeline;
     private final UserServiceProperties userServiceProperties;
 
@@ -108,7 +109,7 @@ public class UserServiceImpl implements UserService {
             updateTopUsersInCache(
                     key,
                     values.stream()
-                            .map(FeedEntity::getId)
+                            .map(UserCacheEntity::getId)
                             .toList(),
                     values.getLast().getSequenceId()
             );
@@ -120,7 +121,7 @@ public class UserServiceImpl implements UserService {
                                 sequenceId,
                                 sequenceId + size
                         ).stream()
-                        .map(FeedEntity::getId)
+                        .map(UserCacheEntity::getId)
                         .toList()
         );
 
@@ -226,7 +227,7 @@ public class UserServiceImpl implements UserService {
         var maxTopUserIterationSize = userServiceProperties.getMaxTopUserIterationSize();
         var userIds = userRepository.findLatestTopUsers(maxTopUserIterationSize)
                 .stream()
-                .map(result -> FeedEntity.builder()
+                .map(result -> UserCacheEntity.builder()
                         .id(result.getId())
                         .build()
                 )
@@ -249,7 +250,7 @@ public class UserServiceImpl implements UserService {
                                 maxTopUserIterationSize
                         )
                         .stream()
-                        .map(result -> FeedEntity.builder()
+                        .map(result -> UserCacheEntity.builder()
                                 .id(result.getId())
                                 .build()
                         ).toList()

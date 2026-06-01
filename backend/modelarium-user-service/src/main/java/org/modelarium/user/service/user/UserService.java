@@ -1,11 +1,11 @@
-package org.modelarium.user.service;
+package org.modelarium.user.service.user;
 
 import org.modelarium.user.dto.request.TopUserGetRequest;
 import org.modelarium.user.dto.request.UserCreateRequest;
 import org.modelarium.user.dto.request.UserGetRequest;
+import org.modelarium.user.dto.request.UserUpdateRequest;
 import org.modelarium.user.dto.response.TopUserGetResponse;
 import org.modelarium.user.dto.response.UserGetResponse;
-import org.modelarium.user.dto.request.UserUpdateRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;

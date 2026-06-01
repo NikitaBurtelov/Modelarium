@@ -2,8 +2,10 @@ package org.modelarium.user.repository;
 
 import org.jspecify.annotations.NonNull;
 import org.modelarium.user.model.UserEntity;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -31,6 +33,14 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
         LIMIT :limit
     """, nativeQuery = true)
     List<UserEntity> findRefreshedTopUsers(List<UUID> ids, Long sequenceId, int limit);
+
+    @Modifying
+    @Query(value = """
+        UPDATE users
+        SET follow_count = follow_count + :count
+        WHERE id = :userId
+    """, nativeQuery = true)
+    void incrementFollow(@Param("userId") UUID userId, @Param("count") long followerCount);
 
     List<UserEntity> findAllByIdIn(Collection<UUID> ids);
 

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +36,20 @@ public class CacheServiceImpl<T extends CacheEntity> implements CacheService<T> 
     }
 
     @Override
+    public void addValue(String key, T value) {
+        redisTemplate.opsForList().rightPush(key, value);
+
+        redisTemplate.expire(key, cacheProperties.getFeedTtl(), TimeUnit.MINUTES);
+    }
+
+    @Override
+    public void addValues(String key, List<T> value) {
+        redisTemplate.opsForList().rightPushAll(key, value);
+
+        redisTemplate.expire(key, cacheProperties.getFeedTtl(), TimeUnit.MINUTES);
+    }
+
+    @Override
     public void setValue(String key, T value) {
         redisTemplate.opsForValue().set(key, value);
 
@@ -47,6 +62,7 @@ public class CacheServiceImpl<T extends CacheEntity> implements CacheService<T> 
 
         redisTemplate.expire(key, cacheProperties.getFeedTtl(), TimeUnit.MINUTES);
     }
+
 
     @Override
     public void delete(String key) {
@@ -61,6 +77,13 @@ public class CacheServiceImpl<T extends CacheEntity> implements CacheService<T> 
     @Override
     public boolean availableRange(String key, int positionId) {
         return positionId <= size(key);
+    }
+
+    @Override
+    public Set<String> keysByPrefix(String keyPrefix) {
+        Set<String> keys = redisTemplate.keys(keyPrefix);
+
+        return keys != null ? keys : Collections.emptySet();
     }
 
     private long size(String key) {

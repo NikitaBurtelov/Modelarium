@@ -2,29 +2,57 @@ package org.modelarium.user.config;
 
 import io.netty.channel.ChannelOption;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.modelarium.user.config.properties.WebProperties;
-import org.modelarium.user.dto.CacheEntity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.cache.RedisCacheManager;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
 public class UserServiceConfig {
     private final WebProperties webProperties;
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(@NonNull CorsRegistry registry) {
+                registry.addMapping("/**")
+                        .allowedOrigins(webProperties.getUiBaseUrl())
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
+            }
+        };
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of(webProperties.getUiBaseUrl()));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
+    }
 
     @Bean
     public WebClient mediaWebClient() {
@@ -64,44 +92,5 @@ public class UserServiceConfig {
                                         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                         )
                 ).build();
-    }
-
-    @Bean
-    public RedisTemplate<String, CacheEntity> redisTemplate(
-            RedisConnectionFactory redisConnectionFactory
-    ) {
-        var redisTemplate = new RedisTemplate<String, CacheEntity>();
-
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(
-                new GenericJackson2JsonRedisSerializer()
-        );
-
-        return redisTemplate;
-    }
-
-    @Bean
-    public RedisCacheManager redisCacheManager(
-            RedisConnectionFactory redisConnectionFactory
-    ) {
-
-        RedisCacheConfiguration config =
-                RedisCacheConfiguration.defaultCacheConfig()
-                        .serializeKeysWith(
-                                RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new StringRedisSerializer())
-                        )
-                        .serializeValuesWith(
-                                RedisSerializationContext.SerializationPair
-                                        .fromSerializer(
-                                                new GenericJackson2JsonRedisSerializer()
-                                        )
-                        );
-
-        return RedisCacheManager
-                .builder(redisConnectionFactory)
-                .cacheDefaults(config)
-                .build();
     }
 }
