@@ -26,7 +26,7 @@ public class PostEntity {
 
     private List<String> mentions;
 
-    private List<UUID> mediaIds;
+    private List<UUID> mediaIds; //TODO потом переделать на PostImageEntity
 
     private Instant createdAt;
 

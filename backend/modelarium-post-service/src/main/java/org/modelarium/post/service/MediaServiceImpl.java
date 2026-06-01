@@ -105,7 +105,7 @@ public class MediaServiceImpl implements MediaService {
                 Mono.just(footerBuffer)
         );
     }
-
+ 
     private DataBuffer createEndBoundary() {
         var BOUNDARY = webProperties.getBoundary();
         String end = "--" + BOUNDARY + "--\r\n";
