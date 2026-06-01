@@ -50,6 +50,9 @@ extra.apply {
     set("postgresql", "org.postgresql:postgresql:42.7.3")
     set("redis", "org.springframework.boot:spring-boot-starter-data-redis")
 
+    set("bucket4jCore", "com.bucket4j:bucket4j_jdk17-core:8.18.0")
+    set("bucket4jLettuce", "com.bucket4j:bucket4j_jdk17-lettuce:8.18.0")
+
     set("jackson", "com.fasterxml.jackson.module:jackson-module-kotlin")
 
     set("lombok", "org.projectlombok:lombok")
