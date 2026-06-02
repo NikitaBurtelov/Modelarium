@@ -44,6 +44,7 @@ extra.apply {
     set("springBootStarterSecurity", "org.springframework.boot:spring-boot-starter-security")
     set("springBootStarterValidation", "org.springframework.boot:spring-boot-starter-validation")
     set("springBootDevtools", "org.springframework.boot:spring-boot-devtools")
+    set("springBootStarterOauth2", "org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 
     set("micrometer", "io.micrometer:micrometer-registry-prometheus:1.16.3")
 
