@@ -1,0 +1,145 @@
+Выдача пользователей
+0. Сделать обновление рейтинга популярности у пользователя раз в 5 минут (к примеру)
+-> Проблема в выдаче списка пользователей (из-за рассинхрона индекса популярности и тд)
+
+1. Сделать выдачу через snapshot:
+Взять из бд n-ое (к примеру 100) id пользователей и запихать их в кеш
+-> потом выдавать id из этого кеша.
+-> подумать когда обновлять/удалять список из кеша
+
+2. Сделать обновление пользователя через батчинг (собираем ивенты (лайк и фоллов и тд))
+и потом вносим сразу все изменения в бд (не по одному запросу(каждый лайк) а сразу пачку )
+
+
+@Service
+@RequiredArgsConstructor
+public class FeedRedisServiceImpl
+        implements FeedRedisService {
+
+    private static final Duration TTL =
+            Duration.ofMinutes(30);
+
+    private final RedisTemplate<String, String> redisTemplate;
+
+    @Override
+    public void saveFeed(
+            UUID viewerId,
+            List<String> userIds
+    ) {
+
+        String key = buildKey(viewerId);
+
+        redisTemplate.delete(key);
+
+        redisTemplate.opsForList()
+                .rightPushAll(key, userIds);
+
+        redisTemplate.expire(key, TTL);
+    }
+
+    @Override
+    public List<String> getFeedPage(
+            UUID viewerId,
+            int page,
+            int size
+    ) {
+
+        String key = buildKey(viewerId);
+
+        long start = (long) page * size;
+        long end = start + size - 1;
+
+        List<String> result =
+                redisTemplate.opsForList()
+                        .range(key, start, end);
+
+        return result == null
+                ? List.of()
+                : result;
+    }
+
+    @Override
+    public boolean exists(UUID viewerId) {
+
+        return Boolean.TRUE.equals(
+                redisTemplate.hasKey(buildKey(viewerId))
+        );
+    }
+
+    @Override
+    public void delete(UUID viewerId) {
+        redisTemplate.delete(buildKey(viewerId));
+    }
+
+    private String buildKey(UUID viewerId) {
+        return "feed:users:" + viewerId;
+    }
+}
+
+------------------------------------------------------------
+
+@Service
+@RequiredArgsConstructor
+public class FeedService {
+
+    private static final int FEED_SIZE = 500;
+
+    private final FeedRedisService feedRedisService;
+    private final UserRepository userRepository;
+
+    public List<UserEntity> getFeed(
+            UUID viewerId,
+            int page,
+            int size
+    ) {
+
+        if (!feedRedisService.exists(viewerId)) {
+
+            generateFeed(viewerId);
+        }
+
+        List<String> userIds =
+                feedRedisService.getFeedPage(
+                        viewerId,
+                        page,
+                        size
+                );
+
+        if (userIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> ids = userIds.stream()
+                .map(UUID::fromString)
+                .toList();
+
+        return userRepository.findByIdIn(ids);
+    }
+
+    private void generateFeed(UUID viewerId) {
+
+        List<UUID> topUsers =
+                userRepository.findTopUsers(
+                        PageRequest.of(
+                                0,
+                                FEED_SIZE
+                        )
+                );
+
+        List<String> ids = topUsers.stream()
+                .map(UUID::toString)
+                .toList();
+
+        feedRedisService.saveFeed(
+                viewerId,
+                ids
+        );
+    }
+
+    public void refreshFeed(UUID viewerId) {
+
+        feedRedisService.delete(viewerId);
+
+        generateFeed(viewerId);
+    }
+}

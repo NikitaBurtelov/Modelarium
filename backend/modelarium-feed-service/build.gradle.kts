@@ -4,7 +4,7 @@ plugins {
     id("jacoco")
 }
 
-group = "${rootProject.group}.user"
+group = "${rootProject.group}.feed"
 version = rootProject.version
 
 repositories {
@@ -14,7 +14,7 @@ repositories {
 tasks.register("serviceInfo") {
     description = ""
     doLast {
-        println("Module: search-service")
+        println("Module: feed-service")
         println("Group: ${project.group}, Version: ${project.version}")
     }
 }

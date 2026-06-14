@@ -1,42 +1,41 @@
-plugins {
-    kotlin("jvm")
-    kotlin("plugin.spring")
-    kotlin("plugin.allopen")
-    kotlin("plugin.noarg")
-    id("java")
+﻿plugins {
     id("org.springframework.boot")
     id("io.spring.dependency-management")
     id("jacoco")
+    id("com.palantir.git-version") version "5.0.0"
 }
 
+val gitVersion: groovy.lang.Closure<String> by extra
 group = "${rootProject.group}.user"
-version = rootProject.version
+version = gitVersion().removePrefix("v")
 
 dependencies {
-    implementation(rootProject.extra["springBootStarterWeb"] as String)
-    implementation(rootProject.extra["SpringBootStarterWebFlux"] as String) //webClient
-    implementation(rootProject.extra["springBootStarterActuator"] as String)
-    implementation(rootProject.extra["springBootStarterLogging"] as String)
-    implementation(rootProject.extra["springBootStarterDataJpa"] as String)
-    implementation(rootProject.extra["springBootStarterLogging"] as String)
-    implementation(rootProject.extra["springBootStarterDataJdbc"] as String)
-    implementation(rootProject.extra["springBootStarterJdbc"] as String)
-    implementation(rootProject.extra["springBootStarterValidation"] as String)
-    implementation(rootProject.extra["springBootStarterOauth2"] as String)
-    implementation(rootProject.extra["springBootStarterSecurity"] as String)
-    developmentOnly(rootProject.extra["springBootDevtools"] as String)
+    implementation(libs.spring.web)
+    implementation(libs.spring.web.flux)
+    implementation(libs.spring.actuator)
+    implementation(libs.spring.security)
+    implementation(libs.spring.oauth2)
+    implementation(libs.spring.doc)
+    implementation(libs.spring.redis)
+    implementation(libs.spring.validation)
+    implementation(libs.spring.jdbc)
+    implementation(libs.spring.data.jpa)
+    implementation(libs.spring.data.jdbc)
 
-    implementation(rootProject.extra["redis"] as String)
+    implementation(libs.infra.kafka)
 
-    implementation(rootProject.extra["bucket4jCore"] as String)
-    implementation(rootProject.extra["bucket4jLettuce"] as String)
+    implementation(libs.util.bucket4j.core)
+    implementation(libs.util.bucket4j.lettuce)
+    implementation(libs.util.lombok)
+    compileOnly(libs.util.lombok)
+    annotationProcessor(libs.util.lombok)
 
-    implementation(rootProject.extra["lombok"] as String)
-    compileOnly(rootProject.extra["lombok"] as String)
-    annotationProcessor(rootProject.extra["lombok"] as String)
+    implementation(libs.infra.s3)
+    runtimeOnly(libs.infra.postgresql)
 
-    implementation(rootProject.extra["postgresql"] as String)
-    runtimeOnly(rootProject.extra["postgresql"] as String)
+    developmentOnly(libs.spring.devtools)
+
+    testImplementation(libs.spring.test)
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
@@ -44,6 +43,7 @@ tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
 }
 
 tasks.register("serviceInfo") {
+    description = ""
     doLast {
         println("Module: user-service")
         println("Group: ${project.group}, Version: ${project.version}")

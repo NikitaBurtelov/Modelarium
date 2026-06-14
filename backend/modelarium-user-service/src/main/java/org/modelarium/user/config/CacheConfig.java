@@ -17,23 +17,25 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 @RequiredArgsConstructor
 public class CacheConfig {
     @Bean
     public RedisTemplate<String, CacheEntity> redisTemplate(
-            RedisConnectionFactory redisConnectionFactory
+            RedisConnectionFactory redisConnectionFactory,
+            ObjectMapper objectMapper
     ) {
         var redisTemplate = new RedisTemplate<String, CacheEntity>();
 
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(
-                new GenericJackson2JsonRedisSerializer()
+                new GenericJacksonJsonRedisSerializer(objectMapper)
         );
 
         return redisTemplate;
@@ -41,14 +43,15 @@ public class CacheConfig {
 
     @Bean
     public RedisTemplate<String, Long> redisTemplateCounter(
-            RedisConnectionFactory redisConnectionFactory
+            RedisConnectionFactory redisConnectionFactory,
+            ObjectMapper objectMapper
     ) {
         var redisTemplateCounter = new RedisTemplate<String, Long>();
 
         redisTemplateCounter.setConnectionFactory(redisConnectionFactory);
         redisTemplateCounter.setKeySerializer(new StringRedisSerializer());
         redisTemplateCounter.setValueSerializer(
-                new GenericJackson2JsonRedisSerializer()
+                new GenericJacksonJsonRedisSerializer(objectMapper)
         );
 
         return redisTemplateCounter;
@@ -56,7 +59,8 @@ public class CacheConfig {
 
     @Bean
     public RedisCacheManager redisCacheManager(
-            RedisConnectionFactory redisConnectionFactory
+            RedisConnectionFactory redisConnectionFactory,
+            ObjectMapper objectMapper
     ) {
 
         RedisCacheConfiguration config =
@@ -68,7 +72,7 @@ public class CacheConfig {
                         .serializeValuesWith(
                                 RedisSerializationContext.SerializationPair
                                         .fromSerializer(
-                                                new GenericJackson2JsonRedisSerializer()
+                                                new GenericJacksonJsonRedisSerializer(objectMapper)
                                         )
                         );
 

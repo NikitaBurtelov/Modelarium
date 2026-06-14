@@ -14,8 +14,8 @@ public class PostServiceConfig {
     private final WebProperties webProperties;
 
     @Bean
-    public WebClient mediaWebClient(WebClient.Builder builder) {
-        return builder
+    public WebClient mediaWebClient() {
+        return WebClient.builder()
                 .baseUrl(webProperties.getMediaBaseUrl())
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();

@@ -29,9 +29,11 @@ public class MediaServiceConfig {
     private final MinIOProperties minIOProperties;
     private final KafkaProperties kafkaProperties;
 
+    //TODO добавить реактивный клиент implementation("software.amazon.awssdk:netty-nio-client:2.46.1")
     @Bean
     public S3Client s3Client() {
-        return S3Client.builder()
+        return S3Client
+                .builder()
                 .endpointOverride(URI.create(minIOProperties.getUrl()))
                 .credentialsProvider(
                         StaticCredentialsProvider.create(
