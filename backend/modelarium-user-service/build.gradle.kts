@@ -2,12 +2,11 @@
     id("org.springframework.boot")
     id("io.spring.dependency-management")
     id("jacoco")
-    id("com.palantir.git-version") version "5.0.0"
 }
 
-val gitVersion: groovy.lang.Closure<String> by extra
+
 group = "${rootProject.group}.user"
-version = gitVersion().removePrefix("v")
+version = "${rootProject.version}"
 
 dependencies {
     implementation(libs.spring.web)

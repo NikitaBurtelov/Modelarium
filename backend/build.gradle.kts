@@ -1,10 +1,12 @@
 import org.gradle.api.tasks.testing.Test
+import org.gradle.kotlin.dsl.invoke
 
 plugins {
     id("java")
     id("java-library")
     id("io.spring.dependency-management") version "1.1.7"
     id("jacoco")
+    id("com.palantir.git-version") version "5.0.0"
 }
 
 java {
@@ -29,7 +31,8 @@ dependencyManagement {
 }
 
 group = "org.modelarium"
-version = "1.0.0"
+val gitVersion: groovy.lang.Closure<String> by extra
+version = gitVersion().removePrefix("v")
 
 subprojects {
     apply(plugin = "io.spring.dependency-management")
@@ -55,6 +58,13 @@ subprojects {
         testImplementation(libs.findLibrary("spring-test").get())
         testImplementation(libs.findLibrary("test-junit").get())
         testImplementation(libs.findLibrary("test-mockito").get())
+    }
+
+    tasks.register("printVersion") {
+        description = "project version"
+        doLast {
+            println("${project.name}: ${project.version}")
+        }
     }
 
     tasks.withType<Test> {
