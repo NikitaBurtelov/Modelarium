@@ -22,6 +22,7 @@ dependencies {
     implementation(libs.spring.data.jdbc)
 
     implementation(libs.infra.kafka)
+    implementation(libs.infra.liquibase)
 
     implementation(libs.util.bucket4j.core)
     implementation(libs.util.bucket4j.lettuce)

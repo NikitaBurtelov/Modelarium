@@ -17,7 +17,7 @@ public class UserEntity {
     @Id
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
-    @Column(name = "sequence_id", updatable = false, nullable = false, unique = true)
+    @Column(name = "sequence_id", insertable = false, updatable = false, nullable = false, unique = true)
     private Long sequenceId;
     @Column(name = "username", unique = true, nullable = false)
     private String userName;
@@ -39,15 +39,15 @@ public class UserEntity {
     private OffsetDateTime updateAt;
     @Column(name = "popularity_index", nullable = false, updatable = true)
     private int popularityIndex;
-    @Column(name = "follow_count", nullable = false, updatable = true)
-    private int followCount;
+//    @Column(name = "follow_count", nullable = false, updatable = true)
+//    private int followCount;
 
     @PrePersist
     protected void onCreate() {
         if (id == null) {
             id = UUID.randomUUID();
             popularityIndex = 0;
-            followCount = 0;
+            //followCount = 0;
         }
         createdAt = OffsetDateTime.now();
         updateAt = createdAt;

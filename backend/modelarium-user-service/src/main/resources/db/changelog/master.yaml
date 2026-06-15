@@ -1,0 +1,25 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 000-create-schema
+      author: user-service
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/000-create-schema.sql
+            relativeToChangelogFile: false
+
+  - changeSet:
+      id: 001-init-tables
+      author: user-service
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/001-init-tables.sql
+            relativeToChangelogFile: false
+
+  - changeSet:
+      id: 002-create-table-follows
+      author: user-service
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/002-create-follows-table.sql
+            relativeToChangelogFile: false
